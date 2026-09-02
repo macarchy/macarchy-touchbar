@@ -248,6 +248,7 @@ class Meter(Widget):
         super().__init__(api, **p)
         self.width = int(p.get("width", 200))
         self.bands = [float(p.get("level", 0.0))] * int(p.get("bands", 1))
+        self.color = p.get("color", Theme.FG)
 
     def measure(self):
         return self.width
@@ -261,6 +262,11 @@ class Meter(Widget):
             self.bands = values
             self.invalidate()
 
+    def set_color(self, color):
+        if color != self.color:
+            self.color = color
+            self.invalidate()
+
     def draw(self, cr, painter):
         r = self.rect
         n = max(1, len(self.bands))
@@ -268,7 +274,7 @@ class Meter(Widget):
         bw = max(2, (r.w - gap * (n - 1)) // n)
         for i, v in enumerate(self.bands):
             h = max(4, int((r.h - 8) * v))
-            painter.pill(cr, Rect(r.x + i * (bw + gap), r.y + (r.h - h) // 2, bw, h), Theme.FG, radius=min(3, bw // 2))
+            painter.pill(cr, Rect(r.x + i * (bw + gap), r.y + (r.h - h) // 2, bw, h), self.color, radius=min(3, bw // 2))
 
 
 class BrokenWidget(Widget):
@@ -283,39 +289,69 @@ class BrokenWidget(Widget):
 
 
 class Sprite(Widget):
+    """A strip of frames, one row, played at its own fps. With `pill` it is a
+    button: the pill lights while pressed, `on_tap` / `on_long_press` fire."""
+
     def __init__(self, api=None, **p):
         super().__init__(api, **p)
         self.sheet = None
-        self.frames = int(p.get("frames", 1))
-        self.fps = int(p.get("fps", 8))
+        self.frames = int(p.get("frames", 0)) or 1
+        self.fps = float(p.get("fps", 8))
         self.frame_w, self.frame_h = int(p.get("frame_w", 72)), int(p.get("frame_h", 56))
         self.scale = p.get("scale")
         self.width = int(p.get("width", 64))
+        self.pill = bool(p.get("pill", False))
+        self._on_tap, self._on_long = p.get("on_tap"), p.get("on_long_press")
         self.frame = 0
         self._surface = None
+        self._last_tick = None
         if p.get("sheet"):
-            self.set_sheet(p["sheet"], self.frames, self.fps)
+            self.set_sheet(p["sheet"], int(p.get("frames", 0)), self.fps)
 
     def measure(self):
         return self.width
 
-    def set_sheet(self, path, frames, fps=None):
+    def set_sheet(self, path, frames=0, fps=None):
+        """Load a strip. `frames` 0 reads the count off the sheet's width, so a
+        regenerated sheet with more frames never shows holes."""
         try:
             self._surface = cairo.ImageSurface.create_from_png(path)
         except Exception:
             self._surface = None
+        if not frames:
+            frames = self._surface.get_width() // self.frame_w if self._surface is not None else 1
         self.sheet, self.frames, self.frame = path, max(1, int(frames)), 0
+        self._last_tick = None
         if fps:
-            self.fps = int(fps)
+            self.fps = float(fps)
         self.invalidate()
 
-    def tick(self):
-        if self.frames > 1:
-            self.frame = (self.frame + 1) % self.frames
-            self.invalidate()
+    def tick(self, now=None):
+        """Advance one frame. With `now`, only once per 1/fps: the first call stamps the clock."""
+        if self.frames <= 1:
+            return
+        if now is not None:
+            if self._last_tick is None:
+                self._last_tick = now
+                return
+            if now - self._last_tick < 1.0 / max(0.1, self.fps):
+                return
+            self._last_tick = now
+        self.frame = (self.frame + 1) % self.frames
+        self.invalidate()
+
+    def on_tap(self, x, y):
+        if self._on_tap:
+            self._on_tap()
+
+    def on_long_press(self, x, y):
+        if self._on_long:
+            self._on_long()
 
     def draw(self, cr, painter):
         r = self.rect
+        if self.pill:
+            painter.pill(cr, r, self._pill_color())
         if self._surface is None:
             return
         scale = float(self.scale) if self.scale else (r.h / self.frame_h if self.frame_h > r.h else max(1, r.h // self.frame_h))

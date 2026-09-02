@@ -155,7 +155,8 @@ def run_daemon(headless=False, config_path=CFG):
     watch_sources()
     loop.every(1.0, watch_sources)
     loop.every(0.1, bar.tick)
-    loop.every(1 / 8, lambda: [w.tick() for w in bar.current_layout().widgets() if isinstance(w, Sprite)])
+    # Sprites keep their own fps; the ticker only offers them the clock.
+    loop.every(1 / 30, lambda: [w.tick(loop.now()) for w in bar.current_layout().widgets() if isinstance(w, Sprite)])
 
     for sig in (signal.SIGTERM, signal.SIGINT):
         signal.signal(sig, lambda *_: loop.stop())

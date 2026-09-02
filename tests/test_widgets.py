@@ -291,3 +291,56 @@ def test_button_with_icon_and_text_honours_tint():
                 green_pixels += 1
     # With fill=1.0 and white tint, should have mostly white, not exact green
     assert white_pixels > green_pixels, "Active button should show white icon, not green"
+
+
+def test_sprite_advances_on_its_own_fps_when_given_the_clock():
+    sp = Sprite(frames=3, fps=4)                       # one frame every 250 ms
+    sp.tick(now=0.0)                                   # first call only stamps the clock
+    assert sp.frame == 0
+    sp.tick(now=0.10)
+    assert sp.frame == 0
+    sp.tick(now=0.26)
+    assert sp.frame == 1
+    sp.tick(now=0.30)
+    assert sp.frame == 1
+    sp.tick(now=0.52)
+    assert sp.frame == 2
+
+
+def test_sprite_fps_is_a_float():
+    sp = Sprite(frames=2, fps=2.2)
+    assert sp.fps == 2.2
+
+
+def test_sprite_reads_the_frame_count_off_the_sheet(tmp_path):
+    sheet = cairo.ImageSurface(cairo.FORMAT_ARGB32, 24, 8)     # three 8 px frames
+    sheet.write_to_png(str(tmp_path / "s.png"))
+    sp = Sprite(frame_w=8, frame_h=8)
+    sp.set_sheet(str(tmp_path / "s.png"))
+    assert sp.frames == 3
+    sp.set_sheet(str(tmp_path / "missing.png"))
+    assert sp.frames == 1                                        # no sheet: draws nothing, ticks nothing
+
+
+def test_sprite_as_a_pill_button_draws_the_pill_and_fires_callbacks():
+    s, cr, p = canvas()
+    taps, longs = [], []
+    sp = Sprite(FakeApi(), pill=True, on_tap=lambda: taps.append(1), on_long_press=lambda: longs.append(1))
+    sp.rect = Rect(0, 0, 130, 60)
+    sp.draw(cr, p)
+    assert px(s, 65, 30) == tuple(int(c * 255) for c in Theme.PILL)
+    sp.pressed = True
+    sp.draw(cr, p)
+    assert px(s, 65, 30) == tuple(int(c * 255) for c in Theme.PILL_PRESSED)
+    sp.on_tap(5, 5); sp.on_long_press(5, 5)
+    assert taps == [1] and longs == [1]
+
+
+def test_meter_takes_a_color():
+    s, cr, p = canvas()
+    m = Meter(bands=1, width=100, level=1.0, color=Theme.FG_DIM)
+    m.rect = Rect(0, 0, 100, 60)
+    m.draw(cr, p)
+    assert px(s, 50, 30) == tuple(int(c * 255) for c in Theme.FG_DIM)
+    m.set_color(Theme.FG)
+    assert m.color == Theme.FG
