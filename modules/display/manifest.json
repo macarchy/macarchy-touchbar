@@ -1,0 +1,2 @@
+{ "schemaVersion": 1, "id": "display", "name": "Display", "kinds": ["touchbar-module"],
+  "entryPoints": { "touchbarModule": "touchbar.py" }, "touchbarModule": { "apiVersion": 1, "order": 10 } }
