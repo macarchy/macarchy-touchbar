@@ -103,6 +103,47 @@ def test_scene_takes_the_bar_and_a_stray_tap_dismisses_it():
     assert not isinstance(bar.current_layout().left.widgets[0], Label)
 
 
+MAIL_TOML = '''
+[items.a]
+widget = "core.button"
+icon = "add"
+[groups.g]
+icon = "brightness_6"
+items = ["core.slider"]
+slide_into = "core.slider"
+timeout = 2
+[layouts.default]
+left = ["a", "core.spacer"]
+right = ["group:g", "core.clock"]
+[layouts.mail]
+match = "Inbox"
+left = ["a"]
+right = ["core.clock"]
+'''
+
+
+def test_rebuild_base_refreshes_the_right_row_of_an_open_group():
+    t = [0.0]
+    reg = Registry()
+    reg.register("core", "button", Button)
+    reg.register("core", "spacer", Spacer)
+    reg.register("core", "slider", Slider)
+    reg.register("core", "clock", lambda api, **p: Label(api, text="12:34", width=100))
+    out = HeadlessOutput()
+    loop = EventLoop(now=lambda: t[0])
+    host = ModuleHost(loop, None, reg)
+    bar = Bar(out, loop, Painter(out.surface), Config.parse(MAIL_TOML), reg, host, now=lambda: t[0])
+    host.hooks = bar
+    bar.set_context(Context(cls="zen", title="", workspace=1, occupied=[1], fn=False, awake=True))
+    bar.open_group("g")
+    assert bar.is_group_open("g")
+    bar.set_context(Context(cls="zen", title="Inbox", workspace=1, occupied=[1], fn=False, awake=True))
+    assert bar.is_group_open("g")
+    right = bar.current_layout().right.widgets
+    assert len(right) == 1
+    assert isinstance(right[0], Label)
+
+
 def test_fn_layer_and_screenshot(tmp_path):
     t = [0.0]
     bar, out, loop = make_bar(t)

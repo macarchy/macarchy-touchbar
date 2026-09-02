@@ -62,6 +62,8 @@ class Bar:
         if name != self.base_name:
             self.base_name = name
             self.base = self.resolver.layout(cls, title)
+            if self.open_group_name and self._group_layout:
+                self._group_layout = Layout(self._group_layout.left, self.base.right)
             self.invalidate(None)
         self._layout_now()
 
@@ -133,12 +135,15 @@ class Bar:
         return self.open_group_name == name
 
     def slide_into(self, name, x, y):
+        if name not in self.config.groups:
+            return
         self.open_group(name)
         self._layout_now()
         target = self.config.groups[name].slide_into
         for w in self._group_layout.left.widgets:
             if getattr(w, "_ref", None) == target:
                 self._capture = w
+                w.pressed = True
                 w.on_press(x, y)
                 break
 
@@ -180,10 +185,13 @@ class Bar:
         cr.paint()
         for w in self.current_layout().widgets():
             if w.rect and w.rect.w and (w.rect.x < rect.right and rect.x < w.rect.right):
+                cr.save()
                 try:
                     w.draw(cr, self.painter)
                 except Exception as e:
                     log("draw failed:", type(w).__name__, repr(e))
+                finally:
+                    cr.restore()
         self.output.flush(rect)
 
     def screenshot(self, path):
@@ -222,8 +230,10 @@ class Bar:
                 target.on_drag_end(g.x, g.y)
                 self.invalidate(target)
         elif g.kind == "release":
+            seen = []
             for w in (self._pressed, self._capture):
-                if w:
+                if w and not any(w is s for s in seen):
+                    seen.append(w)
                     w.pressed = False
                     w.on_release()
                     self.invalidate(w)
