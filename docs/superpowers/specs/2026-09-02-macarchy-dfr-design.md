@@ -129,9 +129,13 @@ Décisions prises pendant le brainstorming :
 
 ### Grille et palette (macOS fidèle)
 
-- Fond `#000`. Pilule 44 px de haut sur 60, rayon 6, marge extérieure 8 px,
-  espacement 6 px. Remplissage `#333`, enfoncée `#666`, active = accent.
-- Glyphe 24 px blanc centré. Texte Inter Medium 22 px, blanc.
+- Fond `#000`. Pilule 60 px (toute la hauteur), rayon 6, marge extérieure 8 px,
+  espacement 6, boutons 130 px. Remplissage `#333`, enfoncée `#666`,
+  active = accent.
+- Glyphe 36 px blanc centré. Texte Inter Medium 22 px, blanc.
+- Ces tailles (60 / 36 / 130) remplacent les 44 / 24 d'origine : calibré sur le
+  matériel le 2026-09-02 — à 44 px la pilule laisse deux bandes noires que
+  l'écran, très allongé, rend beaucoup plus visibles qu'en maquette.
 - Accents : slider blanc sur rail `#555` ; batterie verte en charge, rouge
   sous 20 % ; mode nuit orange ; Ne pas déranger violet ; Jarvis prend les
   couleurs de sa palette de sprites ; permission Claude Code ambre.

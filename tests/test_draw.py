@@ -1,3 +1,5 @@
+import os
+
 import cairo
 import pytest
 
@@ -17,6 +19,8 @@ def pixel(s, x, y):
     return (r, g, b)
 
 
+@pytest.mark.skipif(not os.path.exists(draw.CODEPOINTS),
+                    reason="fonts/MaterialSymbolsRounded.codepoints not downloaded (install.sh)")
 def test_codepoint_lookup():
     assert icon_codepoint("brightness_high") == ""
     with pytest.raises(KeyError):

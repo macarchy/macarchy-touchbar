@@ -7,7 +7,7 @@ if [[ ${1:-} == --uninstall ]]; then
 	systemctl --user disable --now macarchy-dfr.service 2>/dev/null || true
 	rm -f "$HOME/.config/systemd/user/macarchy-dfr.service" "$HOME/.local/bin/macarchy-dfr"
 	systemctl --user daemon-reload
-	pkexec bash -c 'systemctl unmask tiny-dfr; systemctl enable --now tiny-dfr'
+	pkexec bash -c 'systemctl unmask tiny-dfr || true; systemctl enable --now tiny-dfr || true' || true
 	echo "macarchy-dfr removed; tiny-dfr is back. Your layouts.toml was kept."
 	exit 0
 fi
@@ -36,6 +36,53 @@ pkexec bash -c "
 	udevadm control --reload && udevadm trigger --subsystem-match=misc
 	systemctl disable --now tiny-dfr 2>/dev/null; systemctl mask tiny-dfr
 "
+
+# 3b. Hyprland: drop the old omarchy-dfr bindings, autostart the user service instead
+python3 - <<'HYPRMIG'
+import os
+
+home = os.path.expanduser("~")
+changed = []
+
+bindings = os.path.join(home, ".config", "hypr", "bindings.lua")
+MARK = "-- ── Touch Bar (omarchy-dfr)"
+try:
+    lines = open(bindings).read().splitlines(keepends=True)
+except OSError:
+    lines = []
+start = next((i for i, l in enumerate(lines) if l.strip() == MARK), None)
+if start is not None:
+    stop = next((j for j in range(start + 1, len(lines)) if lines[j].strip() == "end"), None)
+    if stop is None:
+        changed.append(f"{bindings}: omarchy-dfr block found but no closing 'end'; left alone")
+    else:
+        del lines[start:stop + 1]
+        with open(bindings, "w") as f:
+            f.write("".join(lines))
+        changed.append(f"{bindings}: removed the omarchy-dfr Touch Bar bindings")
+
+autostart = os.path.join(home, ".config", "hypr", "autostart.lua")
+OLD = 'o.exec_on_start("omarchy-dfr daemon")'
+NEW = 'o.exec_on_start("systemctl --user start macarchy-dfr.service")'
+COMMENT = ("-- The Touch Bar (macarchy-dfr): a systemd user service, so it restarts "
+           "on failure and logs to the journal.")
+try:
+    lines = open(autostart).read().splitlines(keepends=True)
+except OSError:
+    lines = []
+i = next((k for k, l in enumerate(lines) if OLD in l), None)
+if i is not None:
+    indent = lines[i][:len(lines[i]) - len(lines[i].lstrip())]
+    lines[i] = indent + NEW + "\n"
+    if i and lines[i - 1].lstrip().startswith("--"):
+        lines[i - 1] = indent + COMMENT + "\n"
+    with open(autostart, "w") as f:
+        f.write("".join(lines))
+    changed.append(f"{autostart}: autostart the macarchy-dfr user service")
+
+print("\n".join(changed) if changed else "Hyprland config: nothing to migrate.")
+HYPRMIG
+command -v hyprctl >/dev/null 2>&1 && hyprctl reload >/dev/null 2>&1 || true
 
 # 4. CLI symlink, config, user unit
 mkdir -p "$HOME/.local/bin" "$HOME/.config/macarchy-dfr" "$HOME/.config/systemd/user"

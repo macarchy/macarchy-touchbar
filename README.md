@@ -8,7 +8,7 @@ A Python daemon that owns the MacBook Touch Bar on Linux, drawing every pixel it
 ./install.sh
 ```
 
-This installs the system packages the daemon needs (`python-cairo`, `python-gobject`, `papirus-icon-theme`, `brightnessctl`), downloads the Material Symbols Rounded font it draws icons with, grants hardware access without root (adds you to the `video` group for the Touch Bar's DRM card, installs a udev rule for `/dev/uinput`), disables and masks `tiny-dfr` so it stops fighting over the display, symlinks the `macarchy-dfr` CLI into `~/.local/bin`, copies `config/layouts.toml` to `~/.config/macarchy-dfr/layouts.toml` (only if that file doesn't already exist — your edits are never overwritten), and installs + enables the `macarchy-dfr.service` systemd user unit. Re-run it any time to update.
+This installs the system packages the daemon needs (`python-cairo`, `python-gobject`, `papirus-icon-theme`, `brightnessctl`), downloads the Material Symbols Rounded font it draws icons with, grants hardware access without root (adds you to the `video` group for the Touch Bar's DRM card, installs a udev rule for `/dev/uinput`), disables and masks `tiny-dfr` so it stops fighting over the display, migrates the Hyprland config off the old daemon (removes the `omarchy-dfr` Touch Bar binding block from `~/.config/hypr/bindings.lua` and points `~/.config/hypr/autostart.lua` at the `macarchy-dfr` user service instead of `omarchy-dfr daemon`, printing what it changed and reloading Hyprland — a no-op once done), symlinks the `macarchy-dfr` CLI into `~/.local/bin`, copies `config/layouts.toml` to `~/.config/macarchy-dfr/layouts.toml` (only if that file doesn't already exist — your edits are never overwritten), and installs + enables the `macarchy-dfr.service` systemd user unit. Re-run it any time to update.
 
 ```
 ./install.sh --uninstall
@@ -124,6 +124,12 @@ MACARCHY_DFR_HW_TESTS=1 python3 -m pytest tests/ -q
 ```
 
 Stop the daemon first (`systemctl --user stop macarchy-dfr.service`) — the DRM test needs exclusive access to the display.
+
+## Known deviations from the spec (lot 1)
+
+- `api.icon` / `api.text` / `api.image` are not implemented: modules compose `Button`, `Label`, `Image` and the widgets draw through the `Painter`, so nothing needs a drawing API on `Api`.
+- A module marked broken at runtime is reported by `macarchy-dfr status` and in the journal, but its already-built widgets keep drawing normally instead of showing ⚠. The ⚠ fallback exists (`BrokenWidget`) and covers widgets that fail to resolve or build; swapping live widgets out on a runtime failure lands in lot 2.
+- The grid values shipped differ from the spec's, after calibration on the hardware on 2026-09-02: pills are 60 px (the full height of the bar) rather than 44, glyphs 36 px rather than 24, and buttons 130 px wide. Radius 6, outer margin 8 and 6 px spacing are unchanged.
 
 ## Design docs
 

@@ -1,6 +1,8 @@
 import cairo
+import pytest
+
 from macarchy_dfr.geometry import Rect
-from macarchy_dfr.draw import Painter, Theme
+from macarchy_dfr.draw import Painter, Theme, icon_font_available
 from macarchy_dfr.widgets import Widget, Button, Label, Spacer, Image, Slider, Meter, Sprite
 
 
@@ -216,6 +218,7 @@ def test_sprite_draw_no_sheet_and_with_sheet(tmp_path):
     assert px(s2, 32, 30) == (0, 0, 255)  # blue
 
 
+@pytest.mark.skipif(not icon_font_available(), reason="Material Symbols Rounded not installed")
 def test_button_icon_size_param():
     # Test that a button with icon_size=48 has more icon pixels than default
     # Draw button with custom size
