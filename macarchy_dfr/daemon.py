@@ -169,8 +169,15 @@ def run_daemon(headless=False, config_path=CFG):
     watch_sources()
     loop.every(1.0, watch_sources)
     loop.every(0.1, bar.tick)
-    # Sprites keep their own fps; the ticker only offers them the clock.
-    loop.every(1 / 30, lambda: [w.tick(loop.now()) for w in bar.current_layout().widgets() if isinstance(w, Sprite)])
+    # Sprites keep their own fps; the ticker only offers them the clock. Skip
+    # the work entirely once the backlight has dimmed: nothing is visible.
+    def tick_sprites():
+        if bar.backlight and not bar.backlight.awake:
+            return
+        for w in bar.current_layout().widgets():
+            if isinstance(w, Sprite):
+                w.tick(loop.now())
+    loop.every(1 / 30, tick_sprites)
 
     for sig in (signal.SIGTERM, signal.SIGINT):
         signal.signal(sig, lambda *_: loop.stop())
