@@ -16,7 +16,12 @@ widget = "core.button"
 icon = "apps"
 run = "omarchy menu"
 
+# Jarvis's fish (the macarchy.jarvis plugin); without it, a push-to-talk key.
 [items.jarvis]
+widget = "macarchy.jarvis.fish"
+fallback = "jarvis_mic"
+
+[items.jarvis_mic]
 widget = "core.button"
 icon = "mic"
 run = "omarchy-jarvis press"
