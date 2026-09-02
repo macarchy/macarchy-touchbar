@@ -267,6 +267,17 @@ class Meter(Widget):
             painter.pill(cr, Rect(r.x + i * (bw + gap), r.y + (r.h - h) // 2, bw, h), Theme.FG, radius=min(3, bw // 2))
 
 
+class BrokenWidget(Widget):
+    def __init__(self, reason="", api=None, **p):
+        super().__init__(api, **p)
+        self.reason = reason
+
+    def draw(self, cr, painter):
+        painter.pill(cr, self.rect, Theme.PILL)
+        painter.icon(cr, "warning", self.rect.x + self.rect.w / 2, self.rect.y + self.rect.h / 2,
+                     tint=Theme.ACCENT_AMBER)
+
+
 class Sprite(Widget):
     def __init__(self, api=None, **p):
         super().__init__(api, **p)

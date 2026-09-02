@@ -1,0 +1,220 @@
+# macarchy-dfr — Touch Bar layouts. Saved changes apply immediately.
+# A reference is an [items.*] name, a "<module>.<widget>" with defaults, or "group:<name>".
+# Icon names: Material Symbols (https://fonts.google.com/icons), e.g. "brightness_high".
+# Key names: evdev without KEY_, any case ("LeftCtrl", "VolumeUp", "F1", "T").
+
+[settings]
+dim_after = 60
+off_after = 300
+group_timeout = 15
+hud = true
+touch_flip = false
+
+# ─── items ───────────────────────────────────────────────────────────────────
+[items.menu]
+widget = "core.button"
+icon = "apps"
+run = "omarchy menu"
+
+[items.screenshot]
+widget = "system.screenshot"
+
+[items.clipboard]
+widget = "core.button"
+icon = "content_paste"
+run = "omarchy menu clipboard"
+
+[items.emoji]
+widget = "core.button"
+icon = "mood"
+run = "omarchy menu emoji"
+
+[items.theme]
+widget = "core.button"
+icon = "palette"
+run = "omarchy menu summon style.theme"
+
+[items.prev]
+widget = "core.button"
+icon = "skip_previous"
+keys = ["PreviousSong"]
+
+[items.playpause]
+widget = "core.button"
+icon = "play_pause"
+keys = ["PlayPause"]
+
+[items.next]
+widget = "core.button"
+icon = "skip_next"
+keys = ["NextSong"]
+
+[items.mute]
+widget = "core.button"
+icon = "volume_off"
+keys = ["Mute"]
+
+[items.voldown]
+widget = "core.button"
+icon = "volume_down"
+keys = ["VolumeDown"]
+
+[items.volup]
+widget = "core.button"
+icon = "volume_up"
+keys = ["VolumeUp"]
+
+[items.micmute]
+widget = "core.button"
+icon = "mic_off"
+keys = ["MicMute"]
+
+[items.back]
+widget = "core.button"
+icon = "arrow_back"
+keys = ["LeftAlt", "Left"]
+
+[items.forward]
+widget = "core.button"
+icon = "arrow_forward"
+keys = ["LeftAlt", "Right"]
+
+[items.reload]
+widget = "core.button"
+icon = "refresh"
+keys = ["LeftCtrl", "R"]
+
+[items.newtab]
+widget = "core.button"
+icon = "add"
+keys = ["LeftCtrl", "T"]
+
+[items.closetab]
+widget = "core.button"
+icon = "close"
+keys = ["LeftCtrl", "W"]
+
+[items.copy]
+widget = "core.button"
+text = "copy"
+keys = ["LeftCtrl", "LeftShift", "C"]
+
+[items.paste]
+widget = "core.button"
+text = "paste"
+keys = ["LeftCtrl", "LeftShift", "V"]
+
+[items.clear]
+widget = "core.button"
+text = "clear"
+keys = ["LeftCtrl", "L"]
+
+# ─── groups (Control Strip) ──────────────────────────────────────────────────
+[groups.media]
+icon = "music_note"
+items = ["prev", "playpause", "next", "mute", "voldown", "volup", "micmute"]
+
+[groups.display]
+icon = "brightness_6"
+items = ["display.brightness", "display.keyboard", "display.auto", "display.nightlight"]
+slide_into = "display.brightness"
+
+[groups.system]
+icon = "apps"
+items = ["screenshot", "clipboard", "emoji", "theme", "system.charge_limit", "system.lock"]
+
+# ─── layouts ─────────────────────────────────────────────────────────────────
+[layouts.default]
+left  = ["menu", "core.spacer"]
+right = ["group:media", "group:display", "group:system", "core.clock", "system.battery"]
+
+[layouts.browser]
+match = "firefox|chromium|chrome|brave|zen|vivaldi|epiphany"
+left  = ["menu", "back", "forward", "reload", "newtab", "closetab", "core.spacer"]
+right = ["group:media", "group:display", "group:system", "core.clock", "system.battery"]
+
+[layouts.terminal]
+match = "Alacritty|foot|kitty|ghostty|org\\.wezfurlong"
+left  = ["menu", "copy", "paste", "clear", "core.spacer"]
+right = ["group:media", "group:display", "group:system", "core.clock", "system.battery"]
+
+[layouts.agent]
+match = "org\\.omarchy\\.agent"
+left  = ["menu", "core.spacer"]
+right = ["group:media", "group:display", "group:system", "core.clock", "system.battery"]
+
+# The Fn-held layer. Delete this table for a plain F1–F12 row.
+[layouts.fn]
+buttons = ["fn1", "fn2", "fn3", "fn4", "fn5", "fn6", "fn7", "fn8", "fn9", "fn10", "fn11", "fn12"]
+
+[items.fn1]
+widget = "core.button"
+text = "F1"
+keys = ["F1"]
+stretch = 1
+
+[items.fn2]
+widget = "core.button"
+text = "F2"
+keys = ["F2"]
+stretch = 1
+
+[items.fn3]
+widget = "core.button"
+text = "F3"
+keys = ["F3"]
+stretch = 1
+
+[items.fn4]
+widget = "core.button"
+text = "F4"
+keys = ["F4"]
+stretch = 1
+
+[items.fn5]
+widget = "core.button"
+text = "F5"
+keys = ["F5"]
+stretch = 1
+
+[items.fn6]
+widget = "core.button"
+text = "F6"
+keys = ["F6"]
+stretch = 1
+
+[items.fn7]
+widget = "core.button"
+text = "F7"
+keys = ["F7"]
+stretch = 1
+
+[items.fn8]
+widget = "core.button"
+text = "F8"
+keys = ["F8"]
+stretch = 1
+
+[items.fn9]
+widget = "core.button"
+text = "F9"
+keys = ["F9"]
+stretch = 1
+
+[items.fn10]
+widget = "core.button"
+text = "F10"
+keys = ["F10"]
+stretch = 1
+
+[items.fn11]
+widget = "core.button"
+text = "F11"
+keys = ["F11"]
+stretch = 1
+
+[items.fn12]
+widget = "core.button"
+text = "F12"
+keys = ["F12"]
+stretch = 1
