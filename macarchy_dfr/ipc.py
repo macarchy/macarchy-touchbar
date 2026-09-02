@@ -152,7 +152,10 @@ def client(argv):
         print(USAGE)
         return 2
     try:
-        print(ipc_send(" ".join(shlex.quote(a) for a in argv)))
+        # A newline embedded in an argument (a module forwarding text
+        # verbatim) would otherwise break the one-line protocol.
+        flat = (a.replace("\n", " ").replace("\r", " ") for a in argv)
+        print(ipc_send(" ".join(shlex.quote(a) for a in flat)))
         return 0
     except ConnectionError as e:
         print(e, file=sys.stderr)

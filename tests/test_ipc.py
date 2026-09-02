@@ -97,3 +97,18 @@ def test_client_prints_usage_without_arguments():
     from macarchy_dfr.ipc import client, USAGE
     assert client([]) == 2
     assert "daemon" in USAGE
+
+
+def test_client_flattens_newlines_before_sending(monkeypatch):
+    """A reply forwarded verbatim from a module (Jarvis's typed answer) can
+    carry an embedded newline, which would otherwise break the one-line
+    protocol or truncate the request."""
+    from macarchy_dfr import ipc
+
+    sent = []
+    monkeypatch.setattr(ipc, "ipc_send", lambda line, **k: sent.append(line) or "ok")
+    assert ipc.client(["m", "reply", "a\nb"]) == 0
+    assert sent == ["m reply 'a b'"]
+    sent.clear()
+    assert ipc.client(["m", "reply", "a\r\nb"]) == 0
+    assert sent == ["m reply 'a  b'"]
