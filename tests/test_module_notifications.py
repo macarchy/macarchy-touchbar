@@ -60,6 +60,8 @@ def test_setup_does_not_spawn_synchronously():
     reg = Registry(); host = ModuleHost(EventLoop(), Hooks(), reg)
     host.load(ModuleSpec("notifications", "modules/notifications/touchbar.py", 30))
     assert "notifications" not in host.broken
+    assert host.loop.children == {}
+    assert len(host.loop.timers) >= 1
 
 
 def test_notification_body_markup_is_escaped():
