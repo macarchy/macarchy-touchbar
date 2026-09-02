@@ -113,24 +113,27 @@ class EngineIpc:
         if not args:
             return "error: empty request"
         verb, rest = args[0], args[1:]
-        if verb == "status":
-            return self._status()
-        if verb == "reload":
-            return self.reload_fn()
-        if verb == "group" and rest:
-            (self.bar.close_group() if rest[0] == "close" else self.bar.open_group(rest[0]))
-            return "ok"
-        if verb == "screenshot" and rest:
-            self.bar.screenshot(rest[0])
-            return "ok"
-        if verb == "touch":
-            return self._touch(rest)
-        if verb == "brightness" and rest:
-            bl = getattr(self.bar, "backlight", None)
-            if not bl:
-                return "error: no backlight"
-            bl.set_manual(None if rest[0] == "auto" else int(rest[0]))
-            return "ok"
-        if rest:
-            return self.host.dispatch_ipc(verb, rest[0], rest[1:])
-        return f"error: unknown verb {verb}"
+        try:
+            if verb == "status":
+                return self._status()
+            if verb == "reload":
+                return self.reload_fn()
+            if verb == "group" and rest:
+                (self.bar.close_group() if rest[0] == "close" else self.bar.open_group(rest[0]))
+                return "ok"
+            if verb == "screenshot" and rest:
+                self.bar.screenshot(rest[0])
+                return "ok"
+            if verb == "touch":
+                return self._touch(rest)
+            if verb == "brightness" and rest:
+                bl = getattr(self.bar, "backlight", None)
+                if not bl:
+                    return "error: no backlight"
+                bl.set_manual(None if rest[0] == "auto" else int(rest[0]))
+                return "ok"
+            if rest:
+                return self.host.dispatch_ipc(verb, rest[0], rest[1:])
+            return f"error: unknown verb {verb}"
+        except Exception as e:
+            return f"error: {e!r}"

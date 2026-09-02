@@ -1,7 +1,10 @@
 import os
+import pytest
 from macarchy_dfr.ipc import IpcServer, ipc_send, EngineIpc
 from macarchy_dfr.loop import EventLoop
 from macarchy_dfr.touch import Gesture
+from macarchy_dfr.scenes import Scene
+from macarchy_dfr.layout import Layout, Row
 
 
 def test_round_trip_over_unix_socket(tmp_path):
@@ -47,3 +50,26 @@ def test_engine_verbs(tmp_path):
     assert e.handle("jarvis state listening") == "jarvis:state:['listening']"
     assert "layout" in e.handle("status")
     assert e.handle("").startswith("error")
+
+
+def test_ipc_send_absent_daemon(tmp_path):
+    path = str(tmp_path / "absent")
+    with pytest.raises(ConnectionError):
+        ipc_send("status", path)
+
+
+def test_engine_handle_malformed_input(tmp_path):
+    bar, host = FakeBar(), FakeHost()
+    e = EngineIpc(bar, host, reload_fn=lambda: "reloaded")
+    result = e.handle("touch abc,30")
+    assert result.startswith("error")
+    assert bar.gestures == []
+
+
+def test_engine_status_with_real_scenes(tmp_path):
+    bar = FakeBar()
+    bar.scenes = type('obj', (), {'scenes': [Scene("hud", Layout(Row([]), Row([])), priority=20)]})()
+    host = FakeHost()
+    e = EngineIpc(bar, host, reload_fn=lambda: "reloaded")
+    result = e.handle("status")
+    assert "scenes hud" in result
