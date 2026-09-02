@@ -64,7 +64,7 @@ class Module:
         api.log("hello module ready")
 ```
 
-Built-in modules live under `modules/`; drop-in ones are discovered the same way Omarchy shell plugins are, from `~/.config/omarchy/plugins`, and must be enabled in `shell.json` to load.
+Built-in modules live under `modules/`; drop-in ones are discovered the same way Omarchy shell plugins are, from `~/.config/omarchy/plugins`, and must be enabled in `shell.json` to load. For a reference external module, see [`~/Work/jarvis/plugin/touchbar.py`](https://github.com/macarchy/jarvis/blob/touchbar/plugin/touchbar.py) (github.com/macarchy/jarvis): a `Sprite` in a pill, a scene, and six IPC verbs.
 
 `api` calls:
 
@@ -94,6 +94,8 @@ Built-in modules live under `modules/`; drop-in ones are discovered the same way
 | `log(*a)` | log tagged with the module id |
 | `state_dir` | a per-module writable directory under `XDG_STATE_HOME` |
 | `now()` | monotonic clock, for animation timing |
+
+`Sprite` (a strip of frames, one row, played at its own fps) takes a few widget parameters worth calling out: `pill=True` draws a button pill behind the strip that lights while pressed; `on_tap` / `on_long_press` are callbacks, like `Button`'s; `fps` (a float) is the playback rate; `frames=0` (the default) reads the frame count off the sheet's width instead of a fixed number, so a regenerated sheet with more frames never shows holes.
 
 ## CLI
 
@@ -129,8 +131,9 @@ Stop the daemon first (`systemctl --user stop macarchy-dfr.service`) — the DRM
 ## Known deviations from the spec (lot 1)
 
 - `api.icon` / `api.text` / `api.image` are not implemented: modules compose `Button`, `Label`, `Image` and the widgets draw through the `Painter`, so nothing needs a drawing API on `Api`.
-- A module marked broken at runtime is reported by `macarchy-dfr status` and in the journal, but its already-built widgets keep drawing normally instead of showing ⚠. The ⚠ fallback exists (`BrokenWidget`) and covers widgets that fail to resolve or build; swapping live widgets out on a runtime failure lands in lot 2.
+- A module marked broken at runtime is reported by `macarchy-dfr status` and in the journal, but its already-built widgets keep drawing normally instead of showing ⚠. The ⚠ fallback exists (`BrokenWidget`) and covers widgets that fail to resolve or build; swapping live widgets out on a runtime failure lands in a later lot.
 - The grid values shipped differ from the spec's, after calibration on the hardware on 2026-09-02: pills are 60 px (the full height of the bar) rather than 44, glyphs 36 px rather than 24, and buttons 130 px wide. Radius 6, outer margin 8 and 6 px spacing are unchanged.
+- The Jarvis button shows the state and the punctual emotions the FSM sends; the QML mascot's own moods (dnd, low battery, night) are not mirrored on the bar.
 
 ## Design docs
 
