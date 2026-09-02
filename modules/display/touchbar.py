@@ -1,11 +1,13 @@
 """display: brightness and keyboard sliders, night light, auto-brightness."""
 import os
 import threading
+import time
 import weakref
 
 import gi
 from gi.repository import Gio, GLib
 
+from macarchy_dfr.log import log as _log
 from macarchy_dfr.widgets import Button, Slider
 
 _proxy = None
@@ -69,12 +71,17 @@ class BrightnessWriter:
                     self._cv.wait()
                 (subsystem, name), value = self._pending.popitem()
                 self._busy += 1
-            ok = self.setter(subsystem, name, value)
-            if not ok and self.on_error:
-                self.on_error(subsystem, name)
-            with self._cv:
-                self._busy -= 1
-                self._cv.notify_all()
+            try:
+                try:
+                    ok = self.setter(subsystem, name, value)
+                except Exception:
+                    ok = False
+                if not ok and self.on_error:
+                    self.on_error(subsystem, name)
+            finally:
+                with self._cv:
+                    self._busy -= 1
+                    self._cv.notify_all()
 
     def drain(self, timeout=2.0):
         """Wait until nothing is pending or in flight (tests)."""
@@ -110,11 +117,16 @@ class Module:
         api.after(0, self.poll_night)
 
     def _log_write_error(self, subsystem, name):
-        """Called from the writer thread on a failed write; throttled to once per 10 s."""
-        now = self.api.now()
+        """Called from the writer thread on a failed write; throttled to once per 10 s.
+
+        Runs off the event loop, so it must not touch self.api (Api/Gio/GLib
+        objects aren't meant to be driven from another thread): use
+        time.monotonic() and the module-level logger directly instead.
+        """
+        now = time.monotonic()
         if now - self._last_log >= 10:
             self._last_log = now
-            self.api.log(f"logind SetBrightness({subsystem}, {name}) failed")
+            _log(f"[{self.api.id}] logind SetBrightness({subsystem}, {name}) failed")
 
     def _runtime(self):
         return self.RUNTIME or os.environ.get("XDG_RUNTIME_DIR") or "/tmp"

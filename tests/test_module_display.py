@@ -82,6 +82,37 @@ def test_brightness_writes_leave_the_loop_and_latest_value_wins(tmp_path, monkey
     assert calls[-1][2] == 508
 
 
+def test_writer_survives_a_raising_setter(tmp_path, monkeypatch):
+    reg, host, inst = load(tmp_path, monkeypatch)
+    calls = []
+    state = {"n": 0}
+
+    def flaky_setter(*a):
+        state["n"] += 1
+        if state["n"] == 1:
+            raise RuntimeError("boom")
+        calls.append(a)
+        return True
+    type(inst).SETTER = staticmethod(flaky_setter)
+
+    s = reg.factory("display.brightness")(host.apis["display"])
+    inst.refresh()
+    s.rect = __import__("macarchy_dfr.geometry", fromlist=["Rect"]).Rect(0, 8, 400, 44)
+
+    api = host.apis["display"]
+    fake_now = [0.0]
+    api.now = lambda: fake_now[0]
+
+    s.on_tap(0, 30)                  # value -> 0.0: the writer's first call raises
+    inst.writer.drain()              # let the raising write finish before queuing the next
+    fake_now[0] += 1.0
+    s.on_tap(360, 30)                # value -> 1.0: should still be written normally
+
+    assert inst.writer.drain() is True
+    assert inst.writer._thread.is_alive()
+    assert calls and calls[-1][2] == 508
+
+
 def test_auto_button_reflects_als_pid_and_paused_flag(tmp_path, monkeypatch):
     reg, host, inst = load(tmp_path, monkeypatch)
     b = reg.factory("display.auto")(host.apis["display"])
