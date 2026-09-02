@@ -147,3 +147,70 @@ def test_meter_bands_and_sprite_frames():
     assert sp.frame == 0
     sp.tick(); sp.tick(); sp.tick()
     assert sp.frame == 0                               # wraps
+
+
+def test_slider_draw_knob_and_rail():
+    s, cr, p = canvas()
+    sl = Slider(value=0.5); sl.rect = Rect(0, 8, 400, 44)
+    sl.draw(cr, p)
+    # Rail runs from 12 to 388 (no icons, so KNOB//2 = 12 padding)
+    # With value=0.5, knob centre x = 12 + (388-12)*0.5 = 200, y = 30
+    assert px(s, 200, 30) == (255, 255, 255)  # knob is white (FG)
+    # Travelled portion (left of knob) at x=100 should be white (accent FG)
+    assert px(s, 100, 30) == (255, 255, 255)
+    # Untravelled portion (right of knob) at x=300 should be RAIL color
+    rail_rgb = tuple(round(c * 255) for c in Theme.RAIL)
+    assert px(s, 300, 30) == rail_rgb
+
+
+def test_meter_draw_bands():
+    s, cr, p = canvas()
+    m = Meter(width=100, bands=4); m.set_bands([1, 1, 1, 1])
+    m.rect = Rect(0, 8, 100, 44)
+    m.draw(cr, p)
+    # bw = (100 - 3*3) // 4 = 91 // 4 = 22
+    # First band centre: x = 0 + 22//2 = 11, y = 30
+    assert px(s, 11, 30) == (255, 255, 255)  # band is white (FG)
+
+    # Now test with all bands at 0.0
+    s2, cr2, p2 = canvas()
+    m.set_bands([0, 0, 0, 0])
+    m.draw(cr2, p2)
+    # h = max(4, 0) = 4, y = 8 + (44-4)//2 = 28, so band is y=28-32
+    # At y=12, we're above the band, should be black
+    assert px(s2, 11, 12) == (0, 0, 0)
+
+
+def test_sprite_draw_no_sheet_and_with_sheet(tmp_path):
+    s, cr, p = canvas()
+    sp = Sprite(frames=2); sp.rect = Rect(0, 8, 64, 44)
+    sp.draw(cr, p)  # Should not raise when no sheet
+
+    # Create a tiny 2-frame PNG: 16x8, left 8x8 red, right 8x8 blue
+    sheet_path = tmp_path / "sheet.png"
+    sheet_surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 16, 8)
+    sheet_cr = cairo.Context(sheet_surf)
+    # Red frame (left)
+    sheet_cr.set_source_rgb(1, 0, 0)
+    sheet_cr.rectangle(0, 0, 8, 8)
+    sheet_cr.fill()
+    # Blue frame (right)
+    sheet_cr.set_source_rgb(0, 0, 1)
+    sheet_cr.rectangle(8, 0, 8, 8)
+    sheet_cr.fill()
+    sheet_surf.write_to_png(str(sheet_path))
+
+    # Frame 0: red
+    s1, cr1, p1 = canvas()
+    sp1 = Sprite(sheet=str(sheet_path), frames=2, frame_w=8, frame_h=8)
+    sp1.rect = Rect(0, 8, 64, 44)
+    sp1.draw(cr1, p1)
+    # Scale: 44 // 8 = 5 (integer upscale)
+    # Rect centre: x = 32, y = 30
+    assert px(s1, 32, 30) == (255, 0, 0)  # red
+
+    # Frame 1: blue
+    s2, cr2, p2 = canvas()
+    sp1.tick()
+    sp1.draw(cr2, p2)
+    assert px(s2, 32, 30) == (0, 0, 255)  # blue
