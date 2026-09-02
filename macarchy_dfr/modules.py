@@ -172,6 +172,9 @@ class Api:
     def slide_into(self, name, x, y):
         self.host.hooks.slide_into(name, x, y)
 
+    def wake(self):
+        self.host.hooks.wake()
+
     # drawing
     def measure_text(self, s, size=Theme.TEXT_PT):
         p = self.host.hooks.painter

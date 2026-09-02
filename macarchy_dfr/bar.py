@@ -134,6 +134,11 @@ class Bar:
     def is_group_open(self, name):
         return self.open_group_name == name
 
+    def wake(self):
+        """A module taking the bar wants it lit: same as a finger, without the swallow."""
+        if self.backlight:
+            self.backlight.touched()
+
     def slide_into(self, name, x, y):
         if name not in self.config.groups:
             return

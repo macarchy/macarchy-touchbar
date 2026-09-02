@@ -20,7 +20,7 @@ Stops and removes the service and CLI symlink, then unmasks and re-enables `tiny
 
 `~/.config/macarchy-dfr/layouts.toml` is watched by the daemon and reloaded within a second of being saved. It has three kinds of table:
 
-- **`[items.<name>]`** — one bar entry: a `widget` (either a built-in like `core.button` or a `"<module>.<widget>"` reference) plus that widget's parameters (`icon`, `run`, etc).
+- **`[items.<name>]`** — one bar entry: a `widget` (either a built-in like `core.button` or a `"<module>.<widget>"` reference) plus that widget's parameters (`icon`, `run`, etc). `fallback = "<item>"` names another item to draw instead when this one's widget module isn't loaded (an optional plugin).
 - **`[groups.<name>]`** — a named group of items that opens into its own row when tapped, with its own `icon` and ordered `items` list.
 - **`[layouts.<name>]`** — a full bar: `left` and `right` lists of references (an item name, a `"<module>.<widget>"`, or `"group:<name>"`), and an optional `match` regex against the focused window's class that selects this layout automatically; `layouts.default` is used when nothing else matches.
 
@@ -87,6 +87,7 @@ Built-in modules live under `modules/`; drop-in ones are discovered the same way
 | `invalidate(widget=None)` | request a redraw |
 | `open_group(name)` / `close_group()` / `is_group_open(name)` | drive group state |
 | `slide_into(name, x, y)` | animate a group open from a touch point |
+| `wake()` | light the bar as a touch would (a scene taking a dark bar) |
 | `measure_text(s, size=...)` | text width in pixels, for layout math |
 | `app_icon_path(cls, size=32)` | resolve an app icon path from its window class |
 | `theme` | the shared `Theme` (colors, sizes) |
@@ -99,7 +100,7 @@ Built-in modules live under `modules/`; drop-in ones are discovered the same way
 ```
 macarchy-dfr daemon [--headless]        # run the daemon (normally via the systemd unit)
 macarchy-dfr status                     # current layout, open group, active scenes, loaded modules
-macarchy-dfr reload                     # re-read layouts.toml and every module
+macarchy-dfr reload                     # re-read layouts.toml and every module (also picks up plugins installed or removed since start)
 macarchy-dfr group <name>|close         # open or close a group
 macarchy-dfr screenshot <png>           # dump the current bar to a PNG
 macarchy-dfr touch x,y [x2,y2] [--long] # inject a synthetic touch (tap, drag, or long-press)

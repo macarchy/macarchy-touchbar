@@ -3,6 +3,7 @@ import pytest
 from macarchy_dfr.config import Config, Resolver
 from macarchy_dfr.widgets import Button, BrokenWidget
 from macarchy_dfr.groups import GroupButton
+from macarchy_dfr.modules import Registry as ModuleRegistry
 
 TOML = '''
 [settings]
@@ -92,3 +93,42 @@ def test_real_layouts_toml_resolves_terminal_and_fn():
     c = Config.load("config/layouts.toml")
     assert c.pick("kitty", "")[0] == "terminal"
     assert len(c.fn) == 12
+
+
+def _registry_with_core_button():
+    reg = ModuleRegistry()
+    reg.register("core", "button", lambda api=None, **p: Button(api, **p))
+    return reg
+
+
+def test_item_fallback_when_the_widget_is_unknown():
+    cfg = Config.parse('''
+[items.jarvis]
+widget = "macarchy.jarvis.fish"
+fallback = "jarvis_mic"
+[items.jarvis_mic]
+widget = "core.button"
+icon = "mic"
+[layouts.default]
+left = ["jarvis"]
+right = []
+''')
+    r = Resolver(cfg, _registry_with_core_button(), lambda mid: None)
+    w = r.widget("jarvis")
+    assert isinstance(w, Button) and w.icon == "mic"
+
+
+def test_item_fallback_cycle_ends_in_a_broken_widget():
+    cfg = Config.parse('''
+[items.a]
+widget = "x.y"
+fallback = "b"
+[items.b]
+widget = "x.z"
+fallback = "a"
+[layouts.default]
+left = ["a"]
+right = []
+''')
+    r = Resolver(cfg, _registry_with_core_button(), lambda mid: None)
+    assert isinstance(r.widget("a"), BrokenWidget)

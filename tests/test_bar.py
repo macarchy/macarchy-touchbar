@@ -169,3 +169,15 @@ def test_scene_on_hide_fires_once_when_the_scene_times_out():
     assert hidden == ["s"]
     bar.tick()
     assert hidden == ["s"]
+
+
+def test_wake_pokes_the_backlight_only_when_there_is_one():
+    t = [0.0]
+    bar, out, loop = make_bar(t)
+    bar.wake()                                   # headless: no backlight, no error
+    class Backlight:
+        def __init__(self): self.touches = 0
+        def touched(self): self.touches += 1
+    bar.backlight = Backlight()
+    bar.wake()
+    assert bar.backlight.touches == 1

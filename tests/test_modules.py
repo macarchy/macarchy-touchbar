@@ -68,6 +68,7 @@ class Hooks:
     def close_group(self): pass
     def is_group_open(self, n): return False
     def slide_into(self, n, x, y): pass
+    def wake(self): self.calls.append(("wake",))
 
 
 def test_discover_internal_and_enabled_external(tmp_path):
@@ -166,3 +167,12 @@ def test_reload_releases_the_module_s_children(tmp_path):
         assert proc.poll() is not None
     host.unload("child")
     assert loop.children == {}
+
+
+def test_api_wake_reaches_the_bar(tmp_path):
+    plugin(tmp_path, "waker", GOOD)
+    specs = discover(str(tmp_path / "none"), str(tmp_path), {"plugins": [{"id": "waker"}]})
+    host = ModuleHost(EventLoop(), Hooks(), Registry())
+    host.load(specs[0])
+    host.apis["waker"].wake()
+    assert ("wake",) in host.hooks.calls

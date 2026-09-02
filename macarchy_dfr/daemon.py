@@ -48,6 +48,21 @@ def build(loop, output, config, plugins_dir=None, shell_json=None):
     return bar, host
 
 
+def rediscover(host, internal_dir, plugins_dir, shell_json):
+    """Reload every module against the registry as it is NOW: plugins installed
+    since the daemon started come up, removed ones go away. Returns the ids loaded."""
+    specs = discover(internal_dir, plugins_dir, shell_json)
+    wanted = {s.id for s in specs}
+    for mid in list(host.specs):
+        if mid not in wanted:
+            host.unload(mid)
+            host.specs.pop(mid, None)
+            host.broken.pop(mid, None)
+    for spec in specs:
+        host.reload(spec)
+    return [s.id for s in specs]
+
+
 def _load_config(path):
     try:
         return Config.load(path)
@@ -130,8 +145,7 @@ def run_daemon(headless=False, config_path=CFG):
     def reload():
         nonlocal config
         config = _load_config(config_path)
-        for spec in list(host.specs.values()):
-            host.reload(spec)
+        rediscover(host, os.path.join(ROOT, "modules"), PLUGINS, _shell_json())
         bar.reload_config(config)
         return "reloaded"
 

@@ -71,7 +71,7 @@ class Resolver:
         w._ref = ref
         return w
 
-    def widget(self, ref):
+    def widget(self, ref, _seen=()):
         if ref.startswith("group:"):
             g = self.config.groups.get(ref[6:])
             if not g:
@@ -83,7 +83,11 @@ class Resolver:
             return w
         if ref in self.config.items:
             params = dict(self.config.items[ref])
+            fallback = params.pop("fallback", None)
             w = self._make(params.pop("widget"), params)
+            # An item whose module is absent (an optional plugin) may name a stand-in.
+            if isinstance(w, BrokenWidget) and fallback and fallback not in _seen and fallback != ref:
+                return self.widget(fallback, _seen + (ref,))
             w._ref = ref
             return w
         if "." in ref:
