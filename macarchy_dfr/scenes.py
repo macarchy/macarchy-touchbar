@@ -28,12 +28,17 @@ class SceneStack:
         self.scenes.append(scene)
         self._sort()
 
+    def _remove(self, scene):
+        """Remove scene by identity and fire its on_hide."""
+        if scene in self.scenes:
+            self.scenes.remove(scene)
+            if scene.on_hide:
+                scene.on_hide()
+
     def hide(self, name):
         for s in list(self.scenes):
             if s.name == name:
-                self.scenes.remove(s)
-                if s.on_hide:
-                    s.on_hide()
+                self._remove(s)
 
     def touch(self, name):
         for s in self.scenes:
@@ -50,6 +55,9 @@ class SceneStack:
     def tick(self, now):
         before = self.top()
         for s in list(self.scenes):
+            # Skip entries no longer in self.scenes (may have been removed re-entrantly)
+            if s not in self.scenes:
+                continue
             if s.timeout and now >= s.shown_at + s.timeout:
-                self.hide(s.name)
+                self._remove(s)
         return self.top() is not before
