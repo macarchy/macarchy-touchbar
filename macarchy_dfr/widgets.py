@@ -41,7 +41,7 @@ class Widget:
 
 
 class Button(Widget):
-    WIDTH = 100
+    WIDTH = 130
 
     def __init__(self, api=None, **p):
         super().__init__(api, **p)

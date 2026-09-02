@@ -15,7 +15,9 @@ def _read(path, default=0):
 
 class Module:
     MAIN_DIR = "/sys/class/backlight/apple-panel-bl"
+    MAIN_DEV = "apple-panel-bl"
     KBD_DIR = "/sys/class/leds/kbd_backlight"
+    KBD_DEV = "kbd_backlight"
     RUNTIME = None
 
     def setup(self, api):
@@ -23,6 +25,8 @@ class Module:
         self.widgets = weakref.WeakSet()
         self.night = False
         self.auto = False
+        self._inflight = {"brightness": False, "keyboard": False}
+        self._pending = {"brightness": None, "keyboard": None}
         api.widget("brightness", self.brightness)
         api.widget("keyboard", self.keyboard)
         api.widget("nightlight", self.nightlight)
@@ -32,6 +36,21 @@ class Module:
         api.every(5, self.refresh)
         api.every(30, self.poll_night)
         api.after(0, self.poll_night)
+
+    def _write(self, kind, argv):
+        if self._inflight[kind]:
+            self._pending[kind] = argv
+            return
+
+        def done(rc, out):
+            self._inflight[kind] = False
+            pending = self._pending[kind]
+            if pending is not None:
+                self._pending[kind] = None
+                self._write(kind, pending)
+
+        self._inflight[kind] = True
+        self.api.run(argv, on_done=done)
 
     def _runtime(self):
         return self.RUNTIME or os.environ.get("XDG_RUNTIME_DIR") or "/tmp"
@@ -64,14 +83,20 @@ class Module:
 
     def brightness(self, api, **p):
         w = Slider(api, min_icon="brightness_low", max_icon="brightness_high", _kind="brightness",
-                   on_change=lambda v: api.run_detached(f"omarchy-brightness-display --no-osd {int(round(v * 100))}%"), **p)
+                   on_change=lambda v: self._write(
+                       "brightness",
+                       ["brightnessctl", "-q", "-d", self.MAIN_DEV, "set", f"{int(round(v * 100))}%"]),
+                   **p)
         self.widgets.add(w)
         return w
 
     def keyboard(self, api, **p):
         mx = _read(f"{self.KBD_DIR}/max_brightness", 255)
         w = Slider(api, min_icon="keyboard", max_icon="keyboard", _kind="keyboard",
-                   on_change=lambda v: api.run_detached(f"brightnessctl -q -d kbd_backlight set {int(round(v * mx))}"), **p)
+                   on_change=lambda v: self._write(
+                       "keyboard",
+                       ["brightnessctl", "-q", "-d", self.KBD_DEV, "set", str(int(round(v * mx)))]),
+                   **p)
         self.widgets.add(w)
         return w
 
