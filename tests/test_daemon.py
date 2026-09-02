@@ -1,6 +1,7 @@
 import os
 
-from macarchy_dfr.daemon import build
+import macarchy_dfr.daemon as daemon
+from macarchy_dfr.daemon import build, main
 from macarchy_dfr.config import Config
 from macarchy_dfr.loop import EventLoop
 from macarchy_dfr.output import HeadlessOutput
@@ -19,3 +20,10 @@ def test_build_wires_internal_modules_and_default_layout(tmp_path):
     assert out.flushes >= 1
     bar.screenshot(str(tmp_path / "bar.png"))
     assert os.path.getsize(tmp_path / "bar.png") > 1000
+
+
+def test_main_config_without_value_does_not_raise_or_start_daemon(monkeypatch):
+    def _fail(*a, **kw):
+        raise AssertionError("run_daemon must not be called when --config has no value")
+    monkeypatch.setattr(daemon, "run_daemon", _fail)
+    assert main(["daemon", "--config"]) == 2

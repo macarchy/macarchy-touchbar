@@ -58,7 +58,14 @@ def _load_config(path):
 
 def run_daemon(headless=False, config_path=CFG):
     loop = EventLoop()
-    output = HeadlessOutput() if headless else DrmOutput.open()
+    if headless:
+        output = HeadlessOutput()
+    else:
+        try:
+            output = DrmOutput.open()
+        except OSError as e:
+            log(f"cannot open the Touch Bar: {e}")
+            return 1
     config = _load_config(config_path)
     bar, host = build(loop, output, config)
 
@@ -164,16 +171,23 @@ def run_daemon(headless=False, config_path=CFG):
     return 0
 
 
+USAGE = ("usage: macarchy-dfr daemon [--headless] | status | reload | group <name>|close | "
+         "screenshot <png> | touch x,y [x2,y2] [--long] | brightness <n>|auto | <module> <verb> [args]")
+
+
 def main(argv):
     if argv and argv[0] == "daemon":
         headless = "--headless" in argv
         cfg = CFG
         if "--config" in argv:
-            cfg = argv[argv.index("--config") + 1]
+            i = argv.index("--config")
+            if i + 1 >= len(argv):
+                print(USAGE, file=sys.stderr)
+                return 2
+            cfg = argv[i + 1]
         return run_daemon(headless=headless, config_path=cfg)
     if not argv:
-        print("usage: macarchy-dfr daemon [--headless] | status | reload | group <name>|close | "
-              "screenshot <png> | touch x,y [x2,y2] [--long] | brightness <n>|auto | <module> <verb> [args]")
+        print(USAGE)
         return 2
     try:
         print(ipc_send(" ".join(shlex.quote(a) for a in argv)))
