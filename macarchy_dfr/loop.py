@@ -57,7 +57,13 @@ class EventLoop:
         self.soon.append(fn)
 
     def run(self, argv, on_done=None, on_line=None):
-        proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        try:
+            proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        except OSError as e:
+            log(f"cannot run {argv[0]}: {e}")
+            if on_done:
+                self.call_soon(lambda: on_done(-1, ""))
+            return None
         os.set_blocking(proc.stdout.fileno(), False)
         state = {"buf": "", "out": [], "timer": None, "on_done_called": False}
 

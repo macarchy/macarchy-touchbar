@@ -41,6 +41,15 @@ def test_run_streams_lines_and_reports_completion():
     assert lines == ["one", "two"] and done == [(0, "one\ntwo\n")]
 
 
+def test_run_with_missing_binary_does_not_raise_and_reports_failure():
+    loop = EventLoop()
+    rec = []
+    result = loop.run(["/nonexistent/bin/xyz"], on_done=lambda rc, out: rec.append((rc, out)))
+    assert result is None
+    loop.step(timeout=0)
+    assert rec == [(-1, "")]
+
+
 def test_exception_isolation():
     """Exceptions in callbacks must not kill the loop or subsequent callbacks."""
     loop = EventLoop()

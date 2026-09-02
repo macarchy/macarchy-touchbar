@@ -1,3 +1,4 @@
+import gc
 import os
 import importlib.util
 from macarchy_dfr.loop import EventLoop
@@ -41,3 +42,15 @@ def test_auto_button_reflects_als_pid_and_paused_flag(tmp_path, monkeypatch):
     inst.refresh(); assert not b.active
     (tmp_path / "omarchy-als.pid").write_text("1"); inst.refresh(); assert b.active
     (tmp_path / "omarchy-als.paused").write_text(""); inst.refresh(); assert not b.active
+
+
+def test_widgets_are_weakly_held_and_pruned_after_layout_rebuild(tmp_path, monkeypatch):
+    reg, host, inst = load(tmp_path, monkeypatch)
+    s = reg.factory("display.brightness")(host.apis["display"])
+    assert len(inst.widgets) == 1
+    del s
+    gc.collect()
+    assert len(inst.widgets) == 0
+    a = reg.factory("display.brightness")(host.apis["display"])
+    b = reg.factory("display.keyboard")(host.apis["display"])
+    assert len(inst.widgets) == 2

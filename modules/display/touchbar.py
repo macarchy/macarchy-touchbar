@@ -1,5 +1,6 @@
 """display: brightness and keyboard sliders, night light, auto-brightness."""
 import os
+import weakref
 
 from macarchy_dfr.widgets import Button, Slider
 
@@ -19,7 +20,7 @@ class Module:
 
     def setup(self, api):
         self.api = api
-        self.widgets = []
+        self.widgets = weakref.WeakSet()
         self.night = False
         self.auto = False
         api.widget("brightness", self.brightness)
@@ -30,7 +31,7 @@ class Module:
         api.watch_file(os.path.join(self.KBD_DIR, "brightness"), self.refresh)
         api.every(5, self.refresh)
         api.every(30, self.poll_night)
-        self.poll_night()
+        api.after(0, self.poll_night)
 
     def _runtime(self):
         return self.RUNTIME or os.environ.get("XDG_RUNTIME_DIR") or "/tmp"
@@ -40,7 +41,7 @@ class Module:
         kbd = _read(f"{self.KBD_DIR}/brightness") / max(1, _read(f"{self.KBD_DIR}/max_brightness", 255))
         rt = self._runtime()
         self.auto = os.path.exists(f"{rt}/omarchy-als.pid") and not os.path.exists(f"{rt}/omarchy-als.paused")
-        for w in self.widgets:
+        for w in list(self.widgets):
             if w.params.get("_kind") == "brightness" and not w.pressed:
                 w.set_value(main)
             elif w.params.get("_kind") == "keyboard" and not w.pressed:
@@ -64,14 +65,14 @@ class Module:
     def brightness(self, api, **p):
         w = Slider(api, min_icon="brightness_low", max_icon="brightness_high", _kind="brightness",
                    on_change=lambda v: api.run_detached(f"omarchy-brightness-display --no-osd {int(round(v * 100))}%"), **p)
-        self.widgets.append(w)
+        self.widgets.add(w)
         return w
 
     def keyboard(self, api, **p):
         mx = _read(f"{self.KBD_DIR}/max_brightness", 255)
         w = Slider(api, min_icon="keyboard", max_icon="keyboard", _kind="keyboard",
                    on_change=lambda v: api.run_detached(f"brightnessctl -q -d kbd_backlight set {int(round(v * mx))}"), **p)
-        self.widgets.append(w)
+        self.widgets.add(w)
         return w
 
     def nightlight(self, api, **p):
@@ -79,7 +80,7 @@ class Module:
             api.run_detached("omarchy toggle nightlight")
             api.after(1.0, self.poll_night)
         w = Button(api, icon="bedtime", tint=api.theme.ACCENT_ORANGE, on_tap=tap, _kind="night", **p)
-        self.widgets.append(w)
+        self.widgets.add(w)
         return w
 
     def autobright(self, api, **p):
@@ -87,5 +88,5 @@ class Module:
             api.run_detached("omarchy-als toggle")
             api.after(0.5, self.refresh)
         w = Button(api, icon="brightness_auto", on_tap=tap, _kind="auto", **p)
-        self.widgets.append(w)
+        self.widgets.add(w)
         return w
