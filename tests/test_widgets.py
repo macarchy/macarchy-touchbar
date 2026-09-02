@@ -246,3 +246,45 @@ def test_button_icon_size_param():
 
     # Larger icon should have more ink
     assert large_pixels > default_pixels
+
+
+def test_button_with_icon_and_text_honours_tint():
+    # Test that a button with icon+text and tint draws the tint color in the icon area
+    s, cr, p = canvas()
+    b = Button(icon="battery_full", text="66 %", tint=Theme.ACCENT_GREEN)
+    b.rect = Rect(10, 0, 130, 60)
+    b.draw(cr, p)
+
+    # Check that icon area (x in 20..45, y in 15..45) has greenish pixels
+    accent_green_rgb = tuple(round(c * 255) for c in Theme.ACCENT_GREEN)
+    pill_grey_rgb = (51, 51, 51)
+    green_pixels, pill_pixels = 0, 0
+    for y in range(15, 45):
+        for x in range(20, 45):
+            color = px(s, x, y)
+            # Count pixels that are greenish (not pill-grey, not black, not white)
+            if color[1] > 150 and color[0] > 50 and color[0] < 150:  # high green, moderate red
+                green_pixels += 1
+            elif color == pill_grey_rgb:
+                pill_pixels += 1
+    assert green_pixels > 0, "Should find green-ish pixels in icon area for tinted button"
+
+    # Test that active button with tint shows white icon, not green
+    s_active, cr_active, p_active = canvas()
+    b_active = Button(icon="battery_full", text="66 %", tint=Theme.ACCENT_GREEN, active=True)
+    b_active.rect = Rect(10, 0, 130, 60)
+    b_active.draw(cr_active, p_active)
+
+    # Icon area should be mostly white (fill=1.0) or white-green blend, not solid green
+    # Count pixels in the core icon area (where the glyph is)
+    white_rgb = tuple(round(c * 255) for c in Theme.FG)
+    white_pixels, green_pixels = 0, 0
+    for y in range(15, 45):
+        for x in range(25, 40):  # Core icon area
+            color = px(s_active, x, y)
+            if color[0] > 200 and color[1] > 200 and color[2] > 200:  # Very white
+                white_pixels += 1
+            elif color == accent_green_rgb:  # Exact green
+                green_pixels += 1
+    # With fill=1.0 and white tint, should have mostly white, not exact green
+    assert white_pixels > green_pixels, "Active button should show white icon, not green"

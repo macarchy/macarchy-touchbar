@@ -73,8 +73,9 @@ class Button(Widget):
         painter.pill(cr, r, color)
         cx = r.x + r.w / 2
         if self.icon and self.text:
-            painter.icon(cr, self.icon, r.x + 28, r.y + r.h / 2, size=self.icon_size, fill=1.0 if self.active else 0.0)
-            painter.text(cr, self.text, Rect(r.x + 48, r.y, r.w - 56, r.h), align="left")
+            painter.icon(cr, self.icon, r.x + 30, r.y + r.h / 2, size=self.icon_size, fill=1.0 if self.active else 0.0,
+                         tint=(self.tint if (self.tint and not self.active) else Theme.FG))
+            painter.text(cr, self.text, Rect(r.x + 52, r.y, r.w - 60, r.h), align="left")
         elif self.icon:
             painter.icon(cr, self.icon, cx, r.y + r.h / 2, size=self.icon_size, fill=1.0 if self.active else 0.0,
                          tint=(self.tint if (self.tint and not self.active) else Theme.FG))
