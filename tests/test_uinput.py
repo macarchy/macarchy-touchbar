@@ -11,7 +11,7 @@ def test_key_names_in_every_spelling():
         key_code("NoSuchKey")
 
 
-@pytest.mark.skipif(not os.access("/dev/uinput", os.W_OK), reason="needs /dev/uinput")
+@pytest.mark.skipif(os.environ.get("MACARCHY_DFR_HW_TESTS") != "1", reason="set MACARCHY_DFR_HW_TESTS=1 with the daemon stopped to test the real Touch Bar")
 def test_virtual_keyboard_creates_and_presses():
     kb = VirtualKeyboard()
     assert kb.available

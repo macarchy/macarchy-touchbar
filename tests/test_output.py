@@ -34,7 +34,7 @@ def test_rotate_maps_landscape_pixel_to_portrait_row():
     assert px(60 - 1 - 5, 100) == b"\xff\xff\xff"
 
 
-@pytest.mark.skipif(not os.access("/dev/dri/card3", os.W_OK), reason="needs the Touch Bar and DRM master")
+@pytest.mark.skipif(os.environ.get("MACARCHY_DFR_HW_TESTS") != "1", reason="set MACARCHY_DFR_HW_TESTS=1 with the daemon stopped to test the real Touch Bar")
 def test_drm_output_opens_and_flushes():
     out = DrmOutput.open()
     assert (out.width, out.height) == (2008, 60)

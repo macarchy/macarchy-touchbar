@@ -120,7 +120,7 @@ items = ["display.brightness", "display.keyboard", "display.auto", "display.nigh
 slide_into = "display.brightness"
 
 [groups.system]
-icon = "apps"
+icon = "settings"
 items = ["screenshot", "clipboard", "emoji", "theme", "system.charge_limit", "system.lock"]
 
 # ─── layouts ─────────────────────────────────────────────────────────────────
