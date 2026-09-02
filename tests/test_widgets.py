@@ -51,7 +51,47 @@ def test_button_draws_pill_pressed_and_active():
     b.pressed = True; b.draw(cr, p)
     assert px(s, 20, 12) == (102, 102, 102)
     b.pressed = False; b.active = True; b.draw(cr, p)
-    assert px(s, 20, 12) != (51, 51, 51)
+    accent_blue_rgb = tuple(round(c * 255) for c in Theme.ACCENT_BLUE)
+    assert px(s, 20, 12) == accent_blue_rgb
+
+
+def test_button_on_tap_takes_priority():
+    api = FakeApi()
+    cb_called = []
+    def cb():
+        cb_called.append(True)
+    b = Button(api, on_tap=cb, run="x", keys=["A"], group="g", close=True)
+    b.on_tap(0, 0)
+    assert cb_called == [True]
+    assert api.calls == []
+
+
+def test_button_badge_rendering():
+    accent_red_rgb = tuple(round(c * 255) for c in Theme.ACCENT_RED)
+
+    # Test badge=True (point badge)
+    s, cr, p = canvas()
+    b = Button(icon="add", badge=True)
+    b.rect = Rect(10, 8, 64, 44)
+    b.draw(cr, p)
+    badge_cx, badge_cy = b.rect.right - 10, b.rect.y + 10
+    center_pixel = px(s, badge_cx, badge_cy)
+    # Center pixel should be red (allow ±1 rounding tolerance on blue channel)
+    assert center_pixel[0] == 255 and center_pixel[1] == 69 and abs(center_pixel[2] - 59) <= 1
+
+    # Test badge=3 (count badge)
+    s2, cr2, p2 = canvas()
+    b2 = Button(icon="add", badge=3)
+    b2.rect = Rect(10, 8, 64, 44)
+    b2.draw(cr2, p2)
+    badge_cx, badge_cy = b2.rect.right - 10, b2.rect.y + 10
+    center_pixel = px(s2, badge_cx, badge_cy)
+    # Center pixel should not be pure red anymore (digit covers it)
+    # Allow ±1 tolerance
+    assert not (center_pixel[0] == 255 and center_pixel[1] == 69 and abs(center_pixel[2] - 59) <= 1)
+    # Pixel 8px to the left should still be red (outside digit area)
+    left_pixel = px(s2, badge_cx - 8, badge_cy)
+    assert left_pixel[0] == 255 and left_pixel[1] == 69 and abs(left_pixel[2] - 59) <= 1
 
 
 def test_label_set_text_invalidates_only_on_change():
