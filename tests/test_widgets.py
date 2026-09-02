@@ -1,7 +1,7 @@
 import cairo
 from macarchy_dfr.geometry import Rect
 from macarchy_dfr.draw import Painter, Theme
-from macarchy_dfr.widgets import Widget, Button, Label, Spacer, Image
+from macarchy_dfr.widgets import Widget, Button, Label, Spacer, Image, Slider, Meter, Sprite
 
 
 class FakeApi:
@@ -105,3 +105,45 @@ def test_spacer_and_image_defaults():
     assert Spacer().stretch == 1 and Spacer().measure() == 0
     assert Spacer(width=20).stretch == 0 and Spacer(width=20).measure() == 20
     assert Image().measure() == 44
+
+
+def test_slider_maps_x_to_value_and_reports_end():
+    seen = []
+    s = Slider(on_change=seen.append); s.rect = Rect(100, 8, 300, 44)   # rail 100..400
+    s.on_press(100, 30)
+    assert s.value == 0.0
+    s.on_drag(250, 30)
+    assert abs(s.value - 0.5) < 0.01
+    s.on_drag_end(400, 30)
+    assert s.value == 1.0 and seen[-1] == 1.0 and len(seen) >= 2
+
+
+def test_slider_with_icons_reserves_end_zones():
+    s = Slider(min_icon="brightness_low", max_icon="brightness_high")
+    s.rect = Rect(0, 8, 400, 44)                       # active rail 40..360
+    s.on_tap(40, 30);  assert s.value == 0.0
+    s.on_tap(360, 30); assert s.value == 1.0
+    s.on_tap(0, 30);   assert s.value == 0.0           # clamped, no exception
+
+
+def test_slider_throttles_drag_callbacks():
+    t = [0.0]
+    class Api(FakeApi):
+        def now(self): return t[0]
+        def measure_text(self, s, size=22): return 10
+    seen = []
+    s = Slider(Api(), on_change=seen.append); s.rect = Rect(0, 8, 400, 44)
+    s.on_press(0, 30)
+    for i in range(10):
+        t[0] = i * 0.01                                # 10 moves in 0.1 s
+        s.on_drag(10 * i, 30)
+    assert len(seen) <= 3
+
+
+def test_meter_bands_and_sprite_frames():
+    m = Meter(bands=4); m.set_bands([0, 0.5, 1, 0.2])
+    assert m.bands == [0, 0.5, 1, 0.2]
+    sp = Sprite(frames=3, fps=4)
+    assert sp.frame == 0
+    sp.tick(); sp.tick(); sp.tick()
+    assert sp.frame == 0                               # wraps
