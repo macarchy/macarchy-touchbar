@@ -15,6 +15,12 @@ gi.require_version("PangoCairo", "1.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GdkPixbuf, Pango, PangoCairo  # noqa: E402
 
+try:
+    gi.require_version("Gdk", "3.0")
+    from gi.repository import Gdk  # noqa: E402
+except (ValueError, ImportError):
+    Gdk = None
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CODEPOINTS = os.path.join(ROOT, "fonts", "MaterialSymbolsRounded.codepoints")
 
@@ -57,6 +63,13 @@ def icon_codepoint(name):
     return _codepoints[name]
 
 
+def _codepoint_or_none(name):
+    try:
+        return icon_codepoint(name)
+    except KeyError:
+        return None
+
+
 _font_ok = None
 
 
@@ -66,6 +79,34 @@ def icon_font_available():
         fams = {f.get_name() for f in PangoCairo.FontMap.get_default().list_families()}
         _font_ok = Theme.ICON_FONT in fams
     return _font_ok
+
+
+def _pixbuf_to_surface(pb):
+    """Convert a GdkPixbuf to a cairo ImageSurface without Gdk's cairo
+    helpers: cairo's ARGB32 format packs each pixel as premultiplied,
+    native-endian ARGB (BGRA bytes on a little-endian machine)."""
+    w, h = pb.get_width(), pb.get_height()
+    n = pb.get_n_channels()
+    has_alpha = pb.get_has_alpha()
+    src_stride = pb.get_rowstride()
+    src = pb.get_pixels()
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+    dst_stride = surface.get_stride()
+    buf = bytearray(dst_stride * h)
+    for y in range(h):
+        srow, drow = y * src_stride, y * dst_stride
+        for x in range(w):
+            si = srow + x * n
+            r, g, b = src[si], src[si + 1], src[si + 2]
+            a = src[si + 3] if has_alpha else 255
+            di = drow + x * 4
+            buf[di] = b * a // 255
+            buf[di + 1] = g * a // 255
+            buf[di + 2] = r * a // 255
+            buf[di + 3] = a
+    surface.get_data()[:] = bytes(buf)
+    surface.mark_dirty()
+    return surface
 
 
 def rounded_rect(cr, rect, radius):
@@ -82,6 +123,7 @@ class Painter:
     def __init__(self, surface):
         self.surface = surface
         self._images = {}
+        self._image_surfaces = {}
         self._app_icons = {}
 
     def pill(self, cr, rect, color, radius=Theme.RADIUS):
@@ -99,13 +141,10 @@ class Painter:
         return layout
 
     def icon(self, cr, name, cx, cy, size=Theme.ICON, tint=Theme.FG, fill=0.0, weight=500):
-        try:
-            glyph = icon_codepoint(name)
-        except KeyError:
-            glyph = icon_codepoint("warning") if name != "warning" else "!"
         if not icon_font_available():
             layout = self._layout(cr, name, Theme.FONT, 12)
         else:
+            glyph = _codepoint_or_none(name) or _codepoint_or_none("warning") or "!"
             layout = self._layout(cr, glyph, Theme.ICON_FONT, size,
                                    f"FILL={fill:.2f},wght={int(weight)},opsz={min(48, max(20, size))}")
         _ink, logical = layout.get_pixel_extents()
@@ -154,14 +193,21 @@ class Painter:
         if pb is None:
             return False
         cr.save()
-        rounded_rect(cr, rect, radius)
-        cr.clip()
-        gi.require_version("Gdk", "3.0")
-        from gi.repository import Gdk
-        Gdk.cairo_set_source_pixbuf(cr, pb, rect.x + (rect.w - pb.get_width()) / 2,
-                                     rect.y + (rect.h - pb.get_height()) / 2)
-        cr.paint()
-        cr.restore()
+        try:
+            rounded_rect(cr, rect, radius)
+            cr.clip()
+            ox = rect.x + (rect.w - pb.get_width()) / 2
+            oy = rect.y + (rect.h - pb.get_height()) / 2
+            if Gdk is not None:
+                Gdk.cairo_set_source_pixbuf(cr, pb, ox, oy)
+            else:
+                key = (path, rect.w, rect.h)
+                if key not in self._image_surfaces:
+                    self._image_surfaces[key] = _pixbuf_to_surface(pb)
+                cr.set_source_surface(self._image_surfaces[key], ox, oy)
+            cr.paint()
+        finally:
+            cr.restore()
         return True
 
     def app_icon_path(self, cls, size=32):
