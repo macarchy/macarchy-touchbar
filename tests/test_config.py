@@ -1,5 +1,3 @@
-import re
-
 import pytest
 
 from macarchy_dfr.config import Config, Resolver
@@ -70,6 +68,19 @@ def test_resolver_builds_widgets_groups_and_broken_refs():
     assert len(lay.left.widgets) == 1 and len(lay.right.widgets) == 1
     row = r.group_row("display")
     assert row.widgets[0].close and len(row.widgets) == 3
+
+
+def test_resolver_tags_every_widget_with_its_ref():
+    c = Config.parse(TOML)
+    r = Resolver(c, Registry(), api_for=lambda mid: None)
+    assert r.widget("newtab")._ref == "newtab"
+    assert r.widget("core.clock")._ref == "core.clock"
+    assert r.widget("group:display")._ref == "group:display"
+    assert r.widget("display.brightness")._ref == "display.brightness"
+    assert r.widget("nope")._ref == "nope"
+    for w in r.group_row("display").widgets:
+        assert hasattr(w, "_ref")
+    assert r.group_row("display").widgets[0]._ref == "core.button"
 
 
 def test_missing_default_layout_is_an_error():
