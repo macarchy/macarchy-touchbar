@@ -38,17 +38,18 @@ def discover(internal_dir, plugins_dir, shell_json):
             entry = m.get("entryPoints", {}).get("touchbarModule", "touchbar.py")
             specs.append(ModuleSpec(m.get("id", d), os.path.join(internal_dir, d, entry),
                                     m.get("touchbarModule", {}).get("order", 10)))
-    enabled = {p.get("id") for p in (shell_json or {}).get("plugins", [])}
+    enabled = {p.get("id") for p in (shell_json or {}).get("plugins", []) if p.get("id")}
     for d in sorted(os.listdir(plugins_dir)) if os.path.isdir(plugins_dir) else []:
         if d.startswith("."):
             continue
         m = _read_manifest(os.path.join(plugins_dir, d))
-        if not m or KIND not in m.get("kinds", []) or m.get("id") not in enabled:
+        mid = m.get("id") if m else None
+        if not m or KIND not in m.get("kinds", []) or not mid or mid not in enabled:
             continue
         entry = m.get("entryPoints", {}).get("touchbarModule")
         if not entry or ".." in entry or entry.startswith("/"):
             continue
-        specs.append(ModuleSpec(m["id"], os.path.join(plugins_dir, d, entry),
+        specs.append(ModuleSpec(mid, os.path.join(plugins_dir, d, entry),
                                 m.get("touchbarModule", {}).get("order", 50)))
     specs.sort(key=lambda s: s.order)
     return specs
@@ -77,6 +78,7 @@ class Api:
         self.host, self.id = host, module_id
         self.theme = Theme
         self._timers, self._fds, self._ipc, self._scenes = [], [], {}, {}
+        self._shown, self._ctx_listeners = set(), []
         self.state_dir = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"),
                                       "macarchy-dfr", module_id)
         os.makedirs(self.state_dir, exist_ok=True)
@@ -89,10 +91,12 @@ class Api:
         self._scenes[name] = factory
 
     def show_scene(self, name, priority=50, timeout=None, dismissable=True):
+        self._shown.add(name)
         self.host.hooks.show_scene(self.id, name, self._scenes[name], priority=priority,
                                    timeout=timeout, dismissable=dismissable)
 
     def hide_scene(self, name):
+        self._shown.discard(name)
         self.host.hooks.hide_scene(name)
 
     def ipc(self, verb, fn):
@@ -141,7 +145,9 @@ class Api:
         return self.host.hooks.context
 
     def on_context(self, fn):
-        self.host.hooks.on_context(self._g(fn))
+        w = self._g(fn)
+        self._ctx_listeners.append(w)
+        self.host.hooks.on_context(w)
 
     def keys(self, names):
         self.host.hooks.keys(list(names))
@@ -178,6 +184,13 @@ class Api:
             t.cancel()
         for fd in self._fds:
             self.host.loop.remove_fd(fd)
+        off_context = getattr(self.host.hooks, "off_context", None)
+        if off_context:
+            for w in self._ctx_listeners:
+                off_context(w)
+        for name in list(self._shown):
+            self.host.hooks.hide_scene(name)
+        self._shown.clear()
 
 
 class ModuleHost:
@@ -205,12 +218,15 @@ class ModuleHost:
             mod = importlib.util.module_from_spec(ms)
             ms.loader.exec_module(mod)
             inst = mod.Module()
-            self.modules[spec.id] = inst
             inst.setup(api)
+            self.modules[spec.id] = inst
             log(f"module {spec.id}: {', '.join(self.registry.names(spec.id)) or 'no widgets'}")
         except Exception as e:
             self.broken[spec.id] = f"{e!r}\n{traceback.format_exc()}"
             log(f"module {spec.id} failed to load:", repr(e))
+            self.registry.drop(spec.id)
+            self.modules.pop(spec.id, None)
+            api._teardown()
 
     def unload(self, module_id):
         inst = self.modules.pop(module_id, None)

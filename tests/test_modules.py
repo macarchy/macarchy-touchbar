@@ -23,6 +23,19 @@ class Module:
         api.widget("w", lambda api, **p: 1)
         api.ipc("die", lambda *a: 1 / 0)
 '''
+SETUP_THEN_RAISE = '''
+class Module:
+    def setup(self, api):
+        api.widget("w", lambda api, **p: 1)
+        raise RuntimeError("late boom")
+'''
+CTX_AND_SCENE = '''
+class Module:
+    def setup(self, api):
+        api.scene("s", lambda api, **p: ("scene", p))
+        api.on_context(lambda ctx: None)
+        api.show_scene("s")
+'''
 
 
 def plugin(tmp, pid, code, kinds=("touchbar-module",)):
@@ -41,6 +54,7 @@ class Hooks:
     def show_scene(self, *a, **k): self.calls.append(("show", a[1]))
     def hide_scene(self, n): self.calls.append(("hide", n))
     def on_context(self, fn): pass
+    def off_context(self, fn): self.calls.append(("off_context", fn))
     def keys(self, names): self.calls.append(("keys", names))
     def open_group(self, n): pass
     def close_group(self): pass
@@ -84,3 +98,38 @@ def test_api_state_dir_and_now(tmp_path, monkeypatch):
     api = Api(host, "x.y")
     assert api.state_dir == str(tmp_path / "macarchy-dfr" / "x.y") and os.path.isdir(api.state_dir)
     assert isinstance(api.now(), float)
+
+
+def test_load_rolls_back_on_failed_setup(tmp_path):
+    plugin(tmp_path, "partial", SETUP_THEN_RAISE)
+    shell = {"plugins": [{"id": "partial"}]}
+    specs = discover(str(tmp_path / "none"), str(tmp_path), shell)
+    host = ModuleHost(EventLoop(), Hooks(), Registry())
+    host.load(specs[0])
+    assert "partial" in host.broken
+    assert host.registry.names("partial") == []
+    assert "partial" not in host.modules
+
+
+def test_unload_releases_context_listener_and_hides_scene(tmp_path):
+    plugin(tmp_path, "ctxmod", CTX_AND_SCENE)
+    shell = {"plugins": [{"id": "ctxmod"}]}
+    specs = discover(str(tmp_path / "none"), str(tmp_path), shell)
+    hooks = Hooks()
+    host = ModuleHost(EventLoop(), hooks, Registry())
+    host.load(specs[0])
+    host.unload("ctxmod")
+    off_calls = [c for c in hooks.calls if c[0] == "off_context"]
+    assert len(off_calls) == 1 and callable(off_calls[0][1])
+    assert ("hide", "s") in hooks.calls
+
+
+def test_discover_skips_external_manifest_without_id(tmp_path):
+    plugins = tmp_path / "plugins"
+    d = plugins / "noid"; d.mkdir(parents=True)
+    (d / "manifest.json").write_text(json.dumps({"kinds": ["touchbar-module"],
+                                                  "entryPoints": {"touchbarModule": "touchbar.py"}}))
+    (d / "touchbar.py").write_text(GOOD)
+    shell = {"plugins": [{"id": "noid"}]}
+    specs = discover(str(tmp_path / "none"), str(plugins), shell)
+    assert specs == []
