@@ -78,6 +78,7 @@ class Api:
         self.host, self.id = host, module_id
         self.theme = Theme
         self._timers, self._fds, self._ipc, self._scenes = [], [], {}, {}
+        self._procs = []
         self._shown, self._ctx_listeners = set(), []
         self.state_dir = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"),
                                       "macarchy-dfr", module_id)
@@ -93,7 +94,8 @@ class Api:
     def show_scene(self, name, priority=50, timeout=None, dismissable=True):
         self._shown.add(name)
         self.host.hooks.show_scene(self.id, name, self._scenes[name], priority=priority,
-                                   timeout=timeout, dismissable=dismissable)
+                                   timeout=timeout, dismissable=dismissable,
+                                   on_hide=lambda: self._shown.discard(name))
 
     def hide_scene(self, name):
         self._shown.discard(name)
@@ -129,8 +131,11 @@ class Api:
         return self.every(1.0, check)
 
     def run(self, argv, on_done=None, on_line=None):
-        return self.host.loop.run(argv, on_done=self._g(on_done) if on_done else None,
+        proc = self.host.loop.run(argv, on_done=self._g(on_done) if on_done else None,
                                   on_line=self._g(on_line) if on_line else None)
+        if proc is not None:
+            self._procs.append(proc)
+        return proc
 
     def run_detached(self, cmd):
         subprocess.Popen(shlex.split(cmd) if isinstance(cmd, str) else cmd,
@@ -180,14 +185,32 @@ class Api:
         log(f"[{self.id}]", *a)
 
     def _teardown(self):
+        """Release everything the module took from the engine. Idempotent."""
         for t in self._timers:
             t.cancel()
+        self._timers.clear()
         for fd in self._fds:
             self.host.loop.remove_fd(fd)
+        self._fds.clear()
+        for proc in self._procs:
+            if proc.poll() is None:
+                if proc.stdout:
+                    self.host.loop.remove_fd(proc.stdout)
+                try:
+                    proc.terminate()
+                except OSError:
+                    pass
+                try:
+                    proc.stdout.close()
+                except (OSError, AttributeError):
+                    pass
+            self.host.loop.children.pop(proc.pid, None)
+        self._procs.clear()
         off_context = getattr(self.host.hooks, "off_context", None)
         if off_context:
             for w in self._ctx_listeners:
                 off_context(w)
+        self._ctx_listeners.clear()
         for name in list(self._shown):
             self.host.hooks.hide_scene(name)
         self._shown.clear()
@@ -227,6 +250,7 @@ class ModuleHost:
             self.registry.drop(spec.id)
             self.modules.pop(spec.id, None)
             api._teardown()
+            self.apis.pop(spec.id, None)
 
     def unload(self, module_id):
         inst = self.modules.pop(module_id, None)

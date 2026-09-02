@@ -73,3 +73,14 @@ def test_notification_body_markup_is_escaped():
     lay = inst.scene(host.apis["notifications"])
     text = lay.left.widgets[-1].text
     assert "&lt;b&gt;&amp;" in text
+
+
+def test_unload_stops_dbus_monitor_from_being_respawned():
+    """The 5 s retry used to keep resurrecting dbus-monitor after a reload."""
+    reg = Registry(); host = ModuleHost(EventLoop(), Hooks(), reg)
+    host.load(ModuleSpec("notifications", "modules/notifications/touchbar.py", 30))
+    inst = host.modules["notifications"]
+    host.unload("notifications")
+    assert inst._stopped
+    inst.start()                            # what the pending retry timer would do
+    assert host.loop.children == {}

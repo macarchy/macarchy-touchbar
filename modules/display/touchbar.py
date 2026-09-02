@@ -4,7 +4,6 @@ import threading
 import time
 import weakref
 
-import gi
 from gi.repository import Gio, GLib
 
 from macarchy_dfr.log import log as _log
@@ -41,6 +40,9 @@ def _read(path, default=0):
         return default
 
 
+_STOP = ("__stop__", "__stop__")
+
+
 class BrightnessWriter:
     """One background thread; per device only the latest requested value is written.
 
@@ -64,12 +66,24 @@ class BrightnessWriter:
             self._pending[(subsystem, name)] = int(value)
             self._cv.notify()
 
+    def stop(self):
+        """Ask the writer thread to exit and wait briefly for it (teardown)."""
+        with self._cv:
+            self._pending[_STOP] = 0
+            self._cv.notify_all()
+        self._thread.join(0.5)
+
     def _run(self):
         while True:
             with self._cv:
                 while not self._pending:
                     self._cv.wait()
-                (subsystem, name), value = self._pending.popitem()
+                key, value = self._pending.popitem()
+                if key == _STOP:
+                    self._pending.clear()
+                    self._cv.notify_all()
+                    return
+                subsystem, name = key
                 self._busy += 1
             try:
                 try:
@@ -115,6 +129,9 @@ class Module:
         api.every(5, self.refresh)
         api.every(30, self.poll_night)
         api.after(0, self.poll_night)
+
+    def teardown(self):
+        self.writer.stop()
 
     def _log_write_error(self, subsystem, name):
         """Called from the writer thread on a failed write; throttled to once per 10 s.

@@ -102,11 +102,13 @@ class EventLoop:
                     rc = proc.poll()
                     if rc is not None:
                         # Child exited
+                        # Cancel before calling out: an on_done that raises
+                        # must not leave this timer repeating forever.
                         state["on_done_called"] = True
                         self.children.pop(proc.pid, None)
+                        state["timer"].cancel()
                         if on_done:
                             on_done(rc, "".join(state["out"]))
-                        state["timer"].cancel()
 
                 state["timer"] = self.every(0.2, check)
 

@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from macarchy_dfr.loop import EventLoop
 from macarchy_dfr.modules import discover, Registry, ModuleHost, Api
 
@@ -27,7 +28,14 @@ SETUP_THEN_RAISE = '''
 class Module:
     def setup(self, api):
         api.widget("w", lambda api, **p: 1)
+        api.ipc("x", lambda *a: "hi")
         raise RuntimeError("late boom")
+'''
+LONG_CHILD = '''
+import sys
+class Module:
+    def setup(self, api):
+        api.run([sys.executable, "-c", "import time; time.sleep(30)"])
 '''
 CTX_AND_SCENE = '''
 class Module:
@@ -109,6 +117,8 @@ def test_load_rolls_back_on_failed_setup(tmp_path):
     assert "partial" in host.broken
     assert host.registry.names("partial") == []
     assert "partial" not in host.modules
+    assert "partial" not in host.apis
+    assert host.dispatch_ipc("partial", "x", []).startswith("error")
 
 
 def test_unload_releases_context_listener_and_hides_scene(tmp_path):
@@ -133,3 +143,26 @@ def test_discover_skips_external_manifest_without_id(tmp_path):
     shell = {"plugins": [{"id": "noid"}]}
     specs = discover(str(tmp_path / "none"), str(plugins), shell)
     assert specs == []
+
+
+def test_reload_releases_the_module_s_children(tmp_path):
+    """Every reload used to leak a child process and its registered fd."""
+    plugin(tmp_path, "child", LONG_CHILD)
+    specs = discover(str(tmp_path / "none"), str(tmp_path), {"plugins": [{"id": "child"}]})
+    loop = EventLoop()
+    host = ModuleHost(loop, Hooks(), Registry())
+    host.load(specs[0])
+    earlier = list(loop.children.values())
+    host.reload(specs[0])
+    earlier += list(loop.children.values())
+    host.reload(specs[0])
+    assert len(loop.children) == 1
+    assert len(earlier) == 2
+    for proc in earlier:
+        for _ in range(200):
+            if proc.poll() is not None:
+                break
+            time.sleep(0.01)
+        assert proc.poll() is not None
+    host.unload("child")
+    assert loop.children == {}

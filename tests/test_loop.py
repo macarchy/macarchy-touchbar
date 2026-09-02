@@ -136,3 +136,23 @@ def test_run_nonblocking_reap():
 
     # 4. The whole thing completed within ~1s (not just waiting for child)
     assert elapsed < 1.0, f"took {elapsed}s, should be < 1s"
+
+
+def test_reap_timer_is_cancelled_even_when_on_done_raises():
+    """A raising on_done must not leave the 0.2 s reap timer repeating forever."""
+    loop = EventLoop()
+    called = []
+
+    def boom(rc, out):
+        called.append(rc)
+        raise ValueError("on_done boom")
+
+    loop.run([sys.executable, "-c", "import os, time; os.close(1); time.sleep(0.15)"], on_done=boom)
+    for _ in range(60):
+        loop.step(timeout=0.05)
+        if called:
+            break
+    for _ in range(5):
+        loop.step(timeout=0.05)
+    assert called
+    assert all(t[2].cancelled for t in loop.timers if t[2].period == 0.2)

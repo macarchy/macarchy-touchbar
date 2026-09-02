@@ -1,4 +1,6 @@
 import struct
+import time
+
 from macarchy_dfr.touch import TouchReader, TouchEvent, GestureRecognizer
 
 EV_SYN, EV_KEY, EV_ABS = 0, 1, 3
@@ -24,7 +26,7 @@ def lift(t=1.2):
 def test_reader_scales_axes_and_emits_down_move_up():
     r = TouchReader(None, xrange=(0, 20000), yrange=(0, 600))
     evs = r.feed(finger(10000, 300))
-    assert evs == [TouchEvent("down", 1003, 29, 1.0)]
+    assert [(e.kind, e.x, e.y) for e in evs] == [("down", 1003, 29)]
     evs = r.feed(ev(EV_ABS, ABS_MT_POSITION_X, 15000, 1.1) + ev(EV_SYN, 0, 0, 1.1))
     assert evs[0].kind == "move" and evs[0].x == 1505 and evs[0].y == 29
     assert r.feed(lift())[0].kind == "up"
@@ -71,3 +73,13 @@ def test_motion_beyond_slop_becomes_drag_and_cancels_long_press():
     assert g(out) == ["drag"] and rec.dragging and rec.deadline() is None
     assert g(rec.feed(TouchEvent("move", 140, 30, 0.3))) == ["drag"]
     assert g(rec.feed(TouchEvent("up", 140, 30, 0.4))) == ["drag_end", "release"]
+
+
+def test_reader_stamps_events_on_the_monotonic_clock():
+    """The evdev timestamp is CLOCK_REALTIME; the loop's deadlines are monotonic."""
+    r = TouchReader(None, xrange=(0, 20000), yrange=(0, 600))
+    rec = GestureRecognizer()
+    for ev_ in r.feed(finger(10000, 300, t=1.0)):
+        rec.feed(ev_)
+    assert abs(rec.deadline() - time.monotonic()) < 1.0
+    assert g(rec.tick(time.monotonic() + 0.6)) == ["long_press"]

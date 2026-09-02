@@ -5,8 +5,8 @@ and the multitouch B protocol is a dozen lines. Only slot 0 (the first finger)
 is followed; a second finger is ignored.
 """
 import os
-import select
 import struct
+import time
 from dataclasses import dataclass
 from fcntl import ioctl
 
@@ -50,7 +50,6 @@ class TouchReader:
         self.xmin, self.xmax = xrange
         self.ymin, self.ymax = yrange
         self.slot = 0
-        self.tracking = -1
         self.down = False
         self.x = self.y = 0
         self.pending = None      # 'down' | 'move' | 'up' to emit at SYN
@@ -75,12 +74,15 @@ class TouchReader:
         return x, y
 
     def feed(self, data):
+        # The evdev timestamp is CLOCK_REALTIME; every deadline in the daemon
+        # (GestureRecognizer.tick, the loop's timers) runs on time.monotonic().
+        # Stamp the events on that clock instead, or long-press never fires.
         out = []
+        t = time.monotonic()
         self.buf += data
         while len(self.buf) >= _SZ:
-            sec, usec, typ, code, val = struct.unpack(_FMT, self.buf[:_SZ])
+            _sec, _usec, typ, code, val = struct.unpack(_FMT, self.buf[:_SZ])
             self.buf = self.buf[_SZ:]
-            t = sec + usec / 1e6
             if typ == EV_ABS and code == ABS_MT_SLOT:
                 self.slot = val
             elif self.slot != 0:

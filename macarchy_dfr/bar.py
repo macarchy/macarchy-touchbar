@@ -46,8 +46,7 @@ class Bar:
     def reload_config(self, config):
         self.config = config
         self.resolver = Resolver(config, self.registry, lambda mid: self._api_for(mid) or self)
-        fn_refs = config.fn or [f"fn{i}" for i in range(1, 13)]
-        self.fn_layout = Layout(self.resolver.row(fn_refs) if config.fn else
+        self.fn_layout = Layout(self.resolver.row(config.fn) if config.fn else
                                 Row([Button(None, text=f"F{i}", keys=[f"F{i}"], stretch=1) for i in range(1, 13)]),
                                 Row([]))
         self.base_name = None
@@ -104,9 +103,10 @@ class Bar:
             return self._group_layout
         return self.base
 
-    def show_scene(self, module_id, name, factory, priority=50, timeout=None, dismissable=True):
+    def show_scene(self, module_id, name, factory, priority=50, timeout=None, dismissable=True,
+                   on_hide=None):
         layout = factory(self._api_for(module_id))
-        self.scenes.show(Scene(name, layout, priority, timeout, dismissable))
+        self.scenes.show(Scene(name, layout, priority, timeout, dismissable, on_hide))
         self.invalidate(None)
         self._layout_now()
 
@@ -195,7 +195,8 @@ class Bar:
         self.output.flush(rect)
 
     def screenshot(self, path):
-        self.redraw() if self._dirty else None
+        if self._dirty:
+            self.redraw()
         self.output.save_png(path)
 
     # --- touch -----------------------------------------------------------------

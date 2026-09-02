@@ -152,3 +152,20 @@ def test_fn_layer_and_screenshot(tmp_path):
     bar.set_fn(False)
     bar.screenshot(str(tmp_path / "s.png"))
     assert cairo.ImageSurface.create_from_png(str(tmp_path / "s.png")).get_width() == 2008
+
+
+def test_scene_on_hide_fires_once_when_the_scene_times_out():
+    """The Api that showed a scene must learn about every way it goes away."""
+    t = [0.0]
+    bar, out, loop = make_bar(t)
+    from macarchy_dfr.layout import Layout, Row
+    hidden = []
+    bar.show_scene("m", "s", lambda api: Layout(Row([Label(None, text="hi", width=200)]), Row([])),
+                   priority=50, timeout=1, dismissable=True, on_hide=lambda: hidden.append("s"))
+    bar.tick()
+    assert hidden == []
+    t[0] = 1.5
+    bar.tick()
+    assert hidden == ["s"]
+    bar.tick()
+    assert hidden == ["s"]

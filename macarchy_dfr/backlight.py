@@ -3,8 +3,6 @@ import os
 import subprocess
 import time
 
-from .log import log
-
 
 class BacklightPolicy:
     def __init__(self, dim_after=60, off_after=300, dim_level=0.15):
@@ -53,8 +51,11 @@ class BarBacklight:
         self._listeners.append(fn)
 
     def touched(self):
+        # Only the wake transition needs an immediate poll (which forks
+        # brightnessctl); while awake the 2 s timer does the rest.
         self.last_touch = self.now()
-        self.poll()
+        if not self.awake:
+            self.poll()
 
     def set_manual(self, pct):
         self.manual = pct

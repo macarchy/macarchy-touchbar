@@ -131,3 +131,12 @@ def test_widgets_are_weakly_held_and_pruned_after_layout_rebuild(tmp_path, monke
     a = reg.factory("display.brightness")(host.apis["display"])
     b = reg.factory("display.keyboard")(host.apis["display"])
     assert len(inst.widgets) == 2
+
+
+def test_unload_stops_the_brightness_writer_thread(tmp_path, monkeypatch):
+    """The writer thread used to survive every reload."""
+    _reg, host, inst = load(tmp_path, monkeypatch)
+    thread = inst.writer._thread
+    assert thread.is_alive()
+    host.unload("display")
+    assert not thread.is_alive()

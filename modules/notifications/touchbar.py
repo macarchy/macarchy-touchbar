@@ -54,11 +54,20 @@ class Module:
         self.api = api
         self.parser = NotifyParser()
         self.current = None
+        self._stopped = False
         api.scene("notification", self.scene)
         api.after(0, self.start)
 
+    def teardown(self):
+        self._stopped = True
+
     def start(self):
+        if self._stopped:
+            return
+
         def on_done(rc, out):
+            if self._stopped:
+                return                      # torn down: never respawn dbus-monitor
             if rc == -1:
                 self.api.log("dbus-monitor could not be started")
                 return
