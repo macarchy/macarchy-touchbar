@@ -73,3 +73,27 @@ def test_engine_status_with_real_scenes(tmp_path):
     e = EngineIpc(bar, host, reload_fn=lambda: "reloaded")
     result = e.handle("status")
     assert "scenes hud" in result
+
+
+import subprocess
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def test_cli_client_runs_with_the_gui_libraries_blocked(tmp_path):
+    """The FSM calls the CLI on every transition: it must cost a bare interpreter, not cairo + Pango.
+    `sys.modules[name] = None` makes `import name` raise, so any engine import would be a traceback."""
+    code = ("import sys, runpy; sys.modules['cairo'] = None; sys.modules['gi'] = None; "
+            "sys.argv = ['macarchy-dfr', 'status']; runpy.run_path(%r, run_name='__main__')"
+            % os.path.join(ROOT, "bin", "macarchy-dfr"))
+    env = dict(os.environ, XDG_RUNTIME_DIR=str(tmp_path))          # no daemon socket there
+    r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env=env)
+    assert "Traceback" not in r.stderr, r.stderr
+    assert r.returncode == 1 and "not running" in r.stderr
+
+
+def test_client_prints_usage_without_arguments():
+    from macarchy_dfr.ipc import client, USAGE
+    assert client([]) == 2
+    assert "daemon" in USAGE

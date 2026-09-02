@@ -2,6 +2,7 @@
 import os
 import shlex
 import socket
+import sys
 
 from .touch import Gesture
 
@@ -137,3 +138,22 @@ class EngineIpc:
             return f"error: unknown verb {verb}"
         except Exception as e:
             return f"error: {e!r}"
+
+
+USAGE = ("usage: macarchy-dfr daemon [--headless] [--config <toml>] | status | reload | group <name>|close | "
+         "screenshot <png> | touch x,y [x2,y2] [--long] | brightness <n>|auto | <module> <verb> [args]")
+
+
+def client(argv):
+    """The CLI side of `macarchy-dfr <verb> …`. This module imports no engine
+    code on purpose: a shell script calls it on every state change, and it has
+    to cost a bare interpreter, not cairo and Pango."""
+    if not argv:
+        print(USAGE)
+        return 2
+    try:
+        print(ipc_send(" ".join(shlex.quote(a) for a in argv)))
+        return 0
+    except ConnectionError as e:
+        print(e, file=sys.stderr)
+        return 1
