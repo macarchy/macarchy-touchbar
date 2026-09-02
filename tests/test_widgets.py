@@ -29,8 +29,8 @@ def px(s, x, y):
 
 
 def test_button_measures_by_content():
-    assert Button(icon="add").measure() == 64
-    assert Button(text="copy").measure() >= 64
+    assert Button(icon="add").measure() == 100
+    assert Button(text="copy").measure() >= 100
     assert Button(icon="add", width=120).measure() == 120
 
 

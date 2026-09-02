@@ -41,6 +41,8 @@ class Widget:
 
 
 class Button(Widget):
+    WIDTH = 100
+
     def __init__(self, api=None, **p):
         super().__init__(api, **p)
         self.icon, self.text = p.get("icon"), p.get("text")
@@ -60,8 +62,8 @@ class Button(Widget):
         if self.text:
             if self._text_w is None and self.api is not None:
                 self._text_w = self.api.measure_text(self.text)
-            return max(64, (self._text_w or 60) + 32 + (30 if self.icon else 0))
-        return 64
+            return max(self.WIDTH, (self._text_w or 60) + 32 + (30 if self.icon else 0))
+        return self.WIDTH
 
     def draw(self, cr, painter):
         r = self.rect
@@ -166,7 +168,7 @@ class Image(Widget):
 class Slider(Widget):
     stretch = 1
     captures_drag = True
-    KNOB = 24
+    KNOB = 28
     RAIL = 8
     END = 40
 
