@@ -39,7 +39,7 @@ class Theme:
     ACCENT_AMBER = (1.0, 0.8, 0.0)
     ACCENT_BLUE = (0.04, 0.52, 1.0)
     RADIUS = 6
-    ICON = 24
+    ICON = 28
     TEXT_PT = 22
     FONT = "Inter Medium"
     ICON_FONT = "Material Symbols Rounded"

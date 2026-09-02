@@ -203,7 +203,7 @@ class Slider(Widget):
 
     def _emit(self, force):
         now = self.api.now() if (self.api and hasattr(self.api, "now")) else None
-        if not force and now is not None and now - self._last_emit < 0.05:
+        if not force and now is not None and now - self._last_emit < 0.033:
             return
         if now is not None:
             self._last_emit = now
@@ -316,7 +316,7 @@ class Sprite(Widget):
         r = self.rect
         if self._surface is None:
             return
-        scale = float(self.scale) if self.scale else (44 / self.frame_h if self.frame_h > 44 else max(1, 44 // self.frame_h))
+        scale = float(self.scale) if self.scale else (r.h / self.frame_h if self.frame_h > r.h else max(1, r.h // self.frame_h))
         w, h = self.frame_w * scale, self.frame_h * scale
         cr.save()
         cr.translate(r.x + (r.w - w) / 2, r.y + (r.h - h) / 2)

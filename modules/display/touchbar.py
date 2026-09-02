@@ -2,7 +2,32 @@
 import os
 import weakref
 
+import gi
+from gi.repository import Gio, GLib
+
 from macarchy_dfr.widgets import Button, Slider
+
+_proxy = None
+
+
+def _session_proxy():
+    global _proxy
+    if _proxy is None:
+        _proxy = Gio.DBusProxy.new_for_bus_sync(
+            Gio.BusType.SYSTEM, Gio.DBusProxyFlags.DO_NOT_LOAD_PROPERTIES, None,
+            "org.freedesktop.login1", "/org/freedesktop/login1/session/auto",
+            "org.freedesktop.login1.Session", None)
+    return _proxy
+
+
+def set_brightness(subsystem, name, value):
+    """logind SetBrightness: what brightnessctl does, without the process."""
+    try:
+        _session_proxy().call_sync("SetBrightness", GLib.Variant("(ssu)", (subsystem, name, int(value))),
+                                   Gio.DBusCallFlags.NONE, 200, None)
+        return True
+    except GLib.Error:
+        return False
 
 
 def _read(path, default=0):
@@ -19,14 +44,14 @@ class Module:
     KBD_DIR = "/sys/class/leds/kbd_backlight"
     KBD_DEV = "kbd_backlight"
     RUNTIME = None
+    SETTER = staticmethod(set_brightness)
 
     def setup(self, api):
         self.api = api
         self.widgets = weakref.WeakSet()
         self.night = False
         self.auto = False
-        self._inflight = {"brightness": False, "keyboard": False}
-        self._pending = {"brightness": None, "keyboard": None}
+        self._last_log = 0.0
         api.widget("brightness", self.brightness)
         api.widget("keyboard", self.keyboard)
         api.widget("nightlight", self.nightlight)
@@ -37,20 +62,12 @@ class Module:
         api.every(30, self.poll_night)
         api.after(0, self.poll_night)
 
-    def _write(self, kind, argv):
-        if self._inflight[kind]:
-            self._pending[kind] = argv
-            return
-
-        def done(rc, out):
-            self._inflight[kind] = False
-            pending = self._pending[kind]
-            if pending is not None:
-                self._pending[kind] = None
-                self._write(kind, pending)
-
-        self._inflight[kind] = True
-        self.api.run(argv, on_done=done)
+    def _set(self, subsystem, name, value):
+        if not self.SETTER(subsystem, name, value):
+            now = self.api.now()
+            if now - self._last_log >= 10:
+                self._last_log = now
+                self.api.log(f"logind SetBrightness({subsystem}, {name}) failed")
 
     def _runtime(self):
         return self.RUNTIME or os.environ.get("XDG_RUNTIME_DIR") or "/tmp"
@@ -82,20 +99,17 @@ class Module:
         self.api.run(["hyprctl", "hyprsunset", "temperature"], on_done=done)
 
     def brightness(self, api, **p):
+        main_max = _read(f"{self.MAIN_DIR}/max_brightness", 509)
         w = Slider(api, min_icon="brightness_low", max_icon="brightness_high", _kind="brightness",
-                   on_change=lambda v: self._write(
-                       "brightness",
-                       ["brightnessctl", "-q", "-d", self.MAIN_DEV, "set", f"{int(round(v * 100))}%"]),
+                   on_change=lambda v: self._set("backlight", self.MAIN_DEV, int(round(v * main_max))),
                    **p)
         self.widgets.add(w)
         return w
 
     def keyboard(self, api, **p):
-        mx = _read(f"{self.KBD_DIR}/max_brightness", 255)
+        kbd_max = _read(f"{self.KBD_DIR}/max_brightness", 255)
         w = Slider(api, min_icon="keyboard", max_icon="keyboard", _kind="keyboard",
-                   on_change=lambda v: self._write(
-                       "keyboard",
-                       ["brightnessctl", "-q", "-d", self.KBD_DEV, "set", str(int(round(v * mx)))]),
+                   on_change=lambda v: self._set("leds", self.KBD_DEV, int(round(v * kbd_max))),
                    **p)
         self.widgets.add(w)
         return w

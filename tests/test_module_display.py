@@ -24,45 +24,27 @@ def load(tmp_path, monkeypatch):
     return reg, host, inst
 
 
-def test_brightness_slider_reads_sysfs_and_writes_through_omarchy(tmp_path, monkeypatch):
+def test_brightness_slider_reads_sysfs_and_writes_through_logind(tmp_path, monkeypatch):
     reg, host, inst = load(tmp_path, monkeypatch)
     calls = []
-    host.apis["display"].run = lambda argv, on_done=None, on_line=None: calls.append((argv, on_done))
+    type(inst).SETTER = staticmethod(lambda *a: calls.append(a) or True)
     s = reg.factory("display.brightness")(host.apis["display"])
     inst.refresh()
     assert abs(s.value - 0.5) < 0.01
     s.rect = __import__("macarchy_dfr.geometry", fromlist=["Rect"]).Rect(0, 8, 400, 44)
     s.on_tap(360, 30)
-    assert calls[0][0] == ["brightnessctl", "-q", "-d", "apple-panel-bl", "set", "100%"]
+    assert calls[-1] == ("backlight", "apple-panel-bl", 508)
 
 
-def test_brightness_slider_coalesces_writes_while_one_is_in_flight(tmp_path, monkeypatch):
+def test_keyboard_slider_writes_through_logind(tmp_path, monkeypatch):
     reg, host, inst = load(tmp_path, monkeypatch)
     calls = []
-    host.apis["display"].run = lambda argv, on_done=None, on_line=None: calls.append((argv, on_done))
-    # Slider._emit throttles by api.now(); give it a clock that always advances
-    # past the 0.05s throttle window so none of the three drags below is dropped.
-    counter = {"t": 0.0}
-    def fake_now():
-        counter["t"] += 0.1
-        return counter["t"]
-    host.apis["display"].now = fake_now
-    s = reg.factory("display.brightness")(host.apis["display"])
+    type(inst).SETTER = staticmethod(lambda *a: calls.append(a) or True)
+    s = reg.factory("display.keyboard")(host.apis["display"])
     inst.refresh()
     s.rect = __import__("macarchy_dfr.geometry", fromlist=["Rect"]).Rect(0, 8, 400, 44)
-
-    # 40..360 rail: 200 -> 0.5, 280 -> 0.75, 360 -> 1.0.
-    s.on_drag(200, 30)
-    s.on_drag(280, 30)
-    s.on_drag(360, 30)
-    assert len(calls) == 1
-
-    calls[0][1](0, "")
-    assert len(calls) == 2
-    assert calls[1][0] == ["brightnessctl", "-q", "-d", "apple-panel-bl", "set", "100%"]
-
-    calls[1][1](0, "")
-    assert len(calls) == 2
+    s.on_tap(360, 30)
+    assert calls[-1] == ("leds", "kbd_backlight", 255)
 
 
 def test_auto_button_reflects_als_pid_and_paused_flag(tmp_path, monkeypatch):
