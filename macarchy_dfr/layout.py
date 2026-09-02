@@ -6,7 +6,7 @@ trailing widgets get zero width and are not drawn.
 """
 from .geometry import Rect
 
-GAP, MARGIN, PILL_Y, PILL_H = 6, 8, 2, 56
+GAP, MARGIN, PILL_Y, PILL_H = 6, 8, 0, 60
 
 
 def distribute(widths, stretches, total, gap=GAP, margin=MARGIN, y=PILL_Y, h=PILL_H):

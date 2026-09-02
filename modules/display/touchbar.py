@@ -1,5 +1,6 @@
 """display: brightness and keyboard sliders, night light, auto-brightness."""
 import os
+import threading
 import weakref
 
 import gi
@@ -38,6 +39,49 @@ def _read(path, default=0):
         return default
 
 
+class BrightnessWriter:
+    """One background thread; per device only the latest requested value is written.
+
+    logind SetBrightness on apple-panel-bl takes ~44 ms per call (D-Bus or
+    brightnessctl, doesn't matter -- the panel itself is slow). Calling it
+    synchronously from a slider's on_change blocks the event loop for that
+    long on every drag step, so touch tracking lags. This moves the write off
+    the loop: drags just record the latest wanted value, and the writer
+    thread drains it at whatever pace the hardware allows.
+    """
+    def __init__(self, setter, on_error=None):
+        self.setter, self.on_error = setter, on_error
+        self._pending = {}                 # (subsystem, name) -> value
+        self._cv = threading.Condition()
+        self._busy = 0
+        self._thread = threading.Thread(target=self._run, name="brightness-writer", daemon=True)
+        self._thread.start()
+
+    def set(self, subsystem, name, value):
+        with self._cv:
+            self._pending[(subsystem, name)] = int(value)
+            self._cv.notify()
+
+    def _run(self):
+        while True:
+            with self._cv:
+                while not self._pending:
+                    self._cv.wait()
+                (subsystem, name), value = self._pending.popitem()
+                self._busy += 1
+            ok = self.setter(subsystem, name, value)
+            if not ok and self.on_error:
+                self.on_error(subsystem, name)
+            with self._cv:
+                self._busy -= 1
+                self._cv.notify_all()
+
+    def drain(self, timeout=2.0):
+        """Wait until nothing is pending or in flight (tests)."""
+        with self._cv:
+            return self._cv.wait_for(lambda: not self._pending and self._busy == 0, timeout)
+
+
 class Module:
     MAIN_DIR = "/sys/class/backlight/apple-panel-bl"
     MAIN_DEV = "apple-panel-bl"
@@ -52,6 +96,9 @@ class Module:
         self.night = False
         self.auto = False
         self._last_log = 0.0
+        # look up SETTER on the class at call time: tests patch it on the
+        # class after setup() has already run and this writer already exists
+        self.writer = BrightnessWriter(lambda *a: type(self).SETTER(*a), on_error=self._log_write_error)
         api.widget("brightness", self.brightness)
         api.widget("keyboard", self.keyboard)
         api.widget("nightlight", self.nightlight)
@@ -62,12 +109,12 @@ class Module:
         api.every(30, self.poll_night)
         api.after(0, self.poll_night)
 
-    def _set(self, subsystem, name, value):
-        if not self.SETTER(subsystem, name, value):
-            now = self.api.now()
-            if now - self._last_log >= 10:
-                self._last_log = now
-                self.api.log(f"logind SetBrightness({subsystem}, {name}) failed")
+    def _log_write_error(self, subsystem, name):
+        """Called from the writer thread on a failed write; throttled to once per 10 s."""
+        now = self.api.now()
+        if now - self._last_log >= 10:
+            self._last_log = now
+            self.api.log(f"logind SetBrightness({subsystem}, {name}) failed")
 
     def _runtime(self):
         return self.RUNTIME or os.environ.get("XDG_RUNTIME_DIR") or "/tmp"
@@ -101,7 +148,7 @@ class Module:
     def brightness(self, api, **p):
         main_max = _read(f"{self.MAIN_DIR}/max_brightness", 509)
         w = Slider(api, min_icon="brightness_low", max_icon="brightness_high", _kind="brightness",
-                   on_change=lambda v: self._set("backlight", self.MAIN_DEV, int(round(v * main_max))),
+                   on_change=lambda v: self.writer.set("backlight", self.MAIN_DEV, round(v * main_max)),
                    **p)
         self.widgets.add(w)
         return w
@@ -109,7 +156,7 @@ class Module:
     def keyboard(self, api, **p):
         kbd_max = _read(f"{self.KBD_DIR}/max_brightness", 255)
         w = Slider(api, min_icon="keyboard", max_icon="keyboard", _kind="keyboard",
-                   on_change=lambda v: self._set("leds", self.KBD_DEV, int(round(v * kbd_max))),
+                   on_change=lambda v: self.writer.set("leds", self.KBD_DEV, round(v * kbd_max)),
                    **p)
         self.widgets.add(w)
         return w

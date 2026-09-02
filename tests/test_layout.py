@@ -17,8 +17,8 @@ def test_rect_contains_and_union():
 
 def test_fixed_widths_are_laid_left_to_right_with_gap_and_margin():
     rects = distribute([100, 50], [0, 0], total=2008)
-    assert rects[0] == Rect(8, 2, 100, 56)
-    assert rects[1] == Rect(8 + 100 + 6, 2, 50, 56)
+    assert rects[0] == Rect(8, 0, 100, 60)
+    assert rects[1] == Rect(8 + 100 + 6, 0, 50, 60)
 
 
 def test_elastic_widgets_share_the_remainder_by_stretch():
