@@ -50,7 +50,13 @@ class Module:
             icon, tint = "battery_alert", theme.ACCENT_RED
         else:
             icon = "battery_full" if cap >= 95 else f"battery_{max(1, min(6, round(cap / 100 * 7)))}_bar"
-            tint = theme.ACCENT_RED if (cap < 20 and status == "Discharging") else theme.FG
+            # Tint by charge: green >= 50%, orange 20-50%, red < 20%
+            if cap >= 50:
+                tint = theme.ACCENT_GREEN
+            elif cap >= 20:
+                tint = theme.ACCENT_ORANGE
+            else:
+                tint = theme.ACCENT_RED
         for w in list(self.widgets):
             kind = w.params.get("_kind")
             if kind == "battery":
@@ -63,7 +69,7 @@ class Module:
                 w.invalidate()
 
     def battery(self, api, **p):
-        w = Button(api, icon="battery_full", text="…", width=118, _kind="battery",
+        w = Button(api, icon="battery_full", text="…", _kind="battery",
                    on_long_press=lambda: api.show_scene("battery", priority=40, timeout=4), **p)
         self.widgets.add(w)
         return w

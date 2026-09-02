@@ -20,9 +20,12 @@ def load(tmp_path, capacity="55", status="Discharging", end="80", empty="11520",
 def test_battery_text_icon_and_tint(tmp_path):
     reg, host, inst = load(tmp_path)
     b = reg.factory("system.battery")(host.apis["system"]); inst.refresh()
-    assert b.text == "55 %" and b.icon == "battery_4_bar" and b.tint == Theme.FG
+    assert b.text == "55 %" and b.icon == "battery_4_bar" and b.tint == Theme.ACCENT_GREEN
+    assert b.measure() == 130
     load(tmp_path, "15", "Discharging"); inst.refresh()
     assert b.tint == Theme.ACCENT_RED and b.icon == "battery_1_bar"
+    load(tmp_path, "35", "Discharging"); inst.refresh()
+    assert b.tint == Theme.ACCENT_ORANGE and b.icon == "battery_2_bar"
     load(tmp_path, "90", "Charging"); inst.refresh()
     assert b.tint == Theme.ACCENT_GREEN and b.icon == "battery_charging_full"
 
