@@ -2,6 +2,8 @@
 import os
 import struct
 
+from .log import log
+
 KEY_FN = 0x1d0
 _FMT = "llHHi"
 _SZ = struct.calcsize(_FMT)
@@ -34,13 +36,36 @@ def parse_fn(data):
 class FnWatcher:
     def __init__(self, loop, path, on_fn):
         self.fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
+        self.loop = loop
         self.on_fn = on_fn
         loop.add_fd(self.fd, self._readable)
+
+    @classmethod
+    def from_fd(cls, loop, fd, on_fn):
+        """Create FnWatcher from an already-open fd (for testing)."""
+        watcher = cls.__new__(cls)
+        watcher.fd = fd
+        watcher.loop = loop
+        watcher.on_fn = on_fn
+        loop.add_fd(fd, watcher._readable)
+        return watcher
 
     def _readable(self):
         try:
             data = os.read(self.fd, _SZ * 64)
         except BlockingIOError:
+            return
+        except OSError as e:
+            log(f"fn watcher: {e}; stopped")
+            self.loop.remove_fd(self.fd)
+            os.close(self.fd)
+            self.fd = None
+            return
+        if not data:
+            log("fn watcher: EOF; stopped")
+            self.loop.remove_fd(self.fd)
+            os.close(self.fd)
+            self.fd = None
             return
         for down in parse_fn(data):
             self.on_fn(down)
