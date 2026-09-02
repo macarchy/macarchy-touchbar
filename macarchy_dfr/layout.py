@@ -20,7 +20,7 @@ def distribute(widths, stretches, total, gap=GAP, margin=MARGIN, y=PILL_Y, h=PIL
     out, x, budget = [], margin, avail
     for w, s in zip(widths, stretches):
         want = w if s == 0 else (spare * s) // weight
-        got = max(0, min(want, budget))
+        got = want if (s == 0 and want <= budget) else (min(want, budget) if s > 0 else 0)
         out.append(Rect(x, y, got, h))
         x += got + (gap if got else 0)
         budget -= got
@@ -64,7 +64,7 @@ class Layout:
         rw = min(self.right.fixed_width(), width) if self.right.widgets else 0
         self.right.layout(width - rw, rw)
         # the two rows share one gap, not two margins, where they meet
-        self.left.layout(0, width - rw + (MARGIN - GAP if rw else 0))
+        self.left.layout(0, width - rw + (2 * MARGIN - GAP if rw else 0))
 
     def hit(self, x, y):
         return self.left.hit(x, y) or self.right.hit(x, y)

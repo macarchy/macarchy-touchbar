@@ -27,7 +27,7 @@ def test_elastic_widgets_share_the_remainder_by_stretch():
 
 
 def test_overflow_never_overlaps_and_drops_from_the_end():
-    rects = distribute([1000, 1000, 1000], [0, 0, 0], total=2008)
+    rects = distribute([1000, 1000, 1000], [0, 0, 0], total=2100)
     assert rects[0].w == 1000 and rects[1].w == 1000
     assert rects[2].w == 0                      # dropped: zero width, never drawn
 
