@@ -230,9 +230,9 @@ class Slider(Widget):
         cy = r.y + r.h / 2
         x0, x1 = self._rail()
         if self.min_icon:
-            painter.icon(cr, self.min_icon, r.x + self.END / 2, cy, size=20, tint=Theme.FG_DIM)
+            painter.icon(cr, self.min_icon, r.x + self.END / 2, cy, size=26, tint=Theme.FG_DIM)
         if self.max_icon:
-            painter.icon(cr, self.max_icon, r.right - self.END / 2, cy, size=20, tint=Theme.FG_DIM)
+            painter.icon(cr, self.max_icon, r.right - self.END / 2, cy, size=26, tint=Theme.FG_DIM)
         painter.pill(cr, Rect(x0, int(cy - self.RAIL / 2), x1 - x0, self.RAIL), Theme.RAIL, radius=4)
         kx = x0 + (x1 - x0) * self.value
         painter.pill(cr, Rect(x0, int(cy - self.RAIL / 2), int(kx - x0), self.RAIL), self.accent, radius=4)

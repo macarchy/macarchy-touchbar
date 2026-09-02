@@ -34,8 +34,8 @@ class App(Button):
         r = self.rect
         painter.pill(cr, r, self._pill_color())
         x = r.x + 10
-        if self.icon_path and painter.image(cr, self.icon_path, Rect(r.x + 8, r.y + 6, 32, 32), radius=6):
-            x = r.x + 48
+        if self.icon_path and painter.image(cr, self.icon_path, Rect(r.x + 8, r.y + (r.h - 40) / 2, 40, 40), radius=6):
+            x = r.x + 56
         painter.text(cr, self.text or "", Rect(x, r.y, r.right - x - 8, r.h), align="left")
 
     def on_tap(self, x, y):
