@@ -23,3 +23,16 @@ def test_unavailable_uinput_is_not_fatal(tmp_path):
     kb = VirtualKeyboard(path=str(tmp_path / "nope"))
     assert not kb.available
     kb.press(["A"])          # logs, no exception
+
+
+def test_write_error_does_not_escape():
+    """os.write() on a read-only fd raises OSError; press() must not escape."""
+    kb = VirtualKeyboard.__new__(VirtualKeyboard)
+    kb.available = True
+    r, w = os.pipe()
+    kb.fd = r  # read end is read-only; writing raises EBADF
+    try:
+        kb.press(["A"])  # logs error, no exception
+    finally:
+        os.close(r)
+        os.close(w)

@@ -74,12 +74,15 @@ class VirtualKeyboard:
         except KeyError as e:
             log("unknown key", e)
             return
-        for c in codes:
-            self._emit(EV_KEY, c, 1)
-        self._emit(EV_SYN, 0, 0)
-        for c in reversed(codes):
-            self._emit(EV_KEY, c, 0)
-        self._emit(EV_SYN, 0, 0)
+        try:
+            for c in codes:
+                self._emit(EV_KEY, c, 1)
+            self._emit(EV_SYN, 0, 0)
+            for c in reversed(codes):
+                self._emit(EV_KEY, c, 0)
+            self._emit(EV_SYN, 0, 0)
+        except OSError as e:
+            log(f"uinput write failed: {e}")
 
     def close(self):
         if self.fd is not None:
