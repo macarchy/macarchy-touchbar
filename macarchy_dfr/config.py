@@ -47,9 +47,9 @@ class Config:
 
     def pick(self, cls, title):
         for name, rx, left, right in self.layouts:
+            # The last entry is always [layouts.default], whose rx is None.
             if rx is None or rx.search(cls or "") or rx.search(title or ""):
                 return name, left, right
-        return self.layouts[-1][0], self.layouts[-1][2], self.layouts[-1][3]
 
 
 class Resolver:

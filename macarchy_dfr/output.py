@@ -11,7 +11,6 @@ import os
 
 import cairo
 
-from .geometry import Rect
 from .log import log
 
 BUFFER_WIDTH = 64

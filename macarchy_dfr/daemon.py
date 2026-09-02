@@ -63,7 +63,7 @@ def run_daemon(headless=False, config_path=CFG):
     else:
         try:
             output = DrmOutput.open()
-        except OSError as e:
+        except (OSError, ValueError) as e:
             log(f"cannot open the Touch Bar: {e}")
             return 1
     config = _load_config(config_path)
@@ -71,7 +71,8 @@ def run_daemon(headless=False, config_path=CFG):
 
     rt = os.path.dirname(sock_path())
     os.makedirs(rt, exist_ok=True)
-    with open(os.path.join(rt, "daemon.pid"), "w") as f:
+    pid_path = os.path.join(rt, "daemon.pid")
+    with open(pid_path, "w") as f:
         f.write(str(os.getpid()))
 
     keyboard = VirtualKeyboard() if not headless else None
@@ -134,7 +135,7 @@ def run_daemon(headless=False, config_path=CFG):
         bar.reload_config(config)
         return "reloaded"
 
-    IpcServer(loop, sock_path(), EngineIpc(bar, host, reload).handle)
+    ipc = IpcServer(loop, sock_path(), EngineIpc(bar, host, reload).handle)
 
     mtimes = {}
 
@@ -164,6 +165,11 @@ def run_daemon(headless=False, config_path=CFG):
     finally:
         for m in list(host.modules):
             host.unload(m)
+        ipc.close()
+        try:
+            os.unlink(pid_path)
+        except OSError:
+            pass
         if keyboard:
             keyboard.close()
         output.close()

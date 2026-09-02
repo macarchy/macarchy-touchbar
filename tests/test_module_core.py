@@ -1,5 +1,5 @@
 from macarchy_dfr.loop import EventLoop
-from macarchy_dfr.modules import Registry, ModuleHost, ModuleSpec, Api
+from macarchy_dfr.modules import Registry, ModuleHost, ModuleSpec
 from macarchy_dfr.widgets import Button, Label, Slider
 from macarchy_dfr.hypr import Context
 from tests.test_modules import Hooks
