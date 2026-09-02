@@ -59,7 +59,7 @@ class EventLoop:
     def run(self, argv, on_done=None, on_line=None):
         proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
         os.set_blocking(proc.stdout.fileno(), False)
-        state = {"buf": "", "out": []}
+        state = {"buf": "", "out": [], "timer": None, "on_done_called": False}
 
         def readable():
             try:
@@ -80,10 +80,29 @@ class EventLoop:
                 if on_line:
                     on_line(state["buf"])
             self.remove_fd(proc.stdout)
-            rc = proc.wait()
-            self.children.pop(proc.pid, None)
-            if on_done:
-                on_done(rc, "".join(state["out"]))
+            rc = proc.poll()
+            if rc is not None:
+                # Child already exited
+                if not state["on_done_called"]:
+                    state["on_done_called"] = True
+                    self.children.pop(proc.pid, None)
+                    if on_done:
+                        on_done(rc, "".join(state["out"]))
+            else:
+                # Child still running, set up a reap timer
+                def check():
+                    if state["on_done_called"]:
+                        return
+                    rc = proc.poll()
+                    if rc is not None:
+                        # Child exited
+                        state["on_done_called"] = True
+                        self.children.pop(proc.pid, None)
+                        if on_done:
+                            on_done(rc, "".join(state["out"]))
+                        state["timer"].cancel()
+
+                state["timer"] = self.every(0.2, check)
 
         self.add_fd(proc.stdout, readable)
         self.children[proc.pid] = proc
