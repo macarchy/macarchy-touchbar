@@ -77,7 +77,7 @@ def test_button_badge_rendering():
     badge_cx, badge_cy = b.rect.right - 10, b.rect.y + 10
     center_pixel = px(s, badge_cx, badge_cy)
     # Center pixel should be red (allow ±1 rounding tolerance on blue channel)
-    assert center_pixel[0] == 255 and center_pixel[1] == 69 and abs(center_pixel[2] - 59) <= 1
+    assert center_pixel[0] == accent_red_rgb[0] and center_pixel[1] == accent_red_rgb[1] and abs(center_pixel[2] - accent_red_rgb[2]) <= 1
 
     # Test badge=3 (count badge)
     s2, cr2, p2 = canvas()
@@ -88,10 +88,10 @@ def test_button_badge_rendering():
     center_pixel = px(s2, badge_cx, badge_cy)
     # Center pixel should not be pure red anymore (digit covers it)
     # Allow ±1 tolerance
-    assert not (center_pixel[0] == 255 and center_pixel[1] == 69 and abs(center_pixel[2] - 59) <= 1)
+    assert not (center_pixel[0] == accent_red_rgb[0] and center_pixel[1] == accent_red_rgb[1] and abs(center_pixel[2] - accent_red_rgb[2]) <= 1)
     # Pixel 8px to the left should still be red (outside digit area)
     left_pixel = px(s2, badge_cx - 8, badge_cy)
-    assert left_pixel[0] == 255 and left_pixel[1] == 69 and abs(left_pixel[2] - 59) <= 1
+    assert left_pixel[0] == accent_red_rgb[0] and left_pixel[1] == accent_red_rgb[1] and abs(left_pixel[2] - accent_red_rgb[2]) <= 1
 
 
 def test_label_set_text_invalidates_only_on_change():
