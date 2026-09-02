@@ -87,7 +87,9 @@ class Resolver:
             w = self._make(params.pop("widget"), params)
             # An item whose module is absent (an optional plugin) may name a stand-in.
             if isinstance(w, BrokenWidget) and fallback and fallback not in _seen and fallback != ref:
-                return self.widget(fallback, _seen + (ref,))
+                fw = self.widget(fallback, _seen + (ref,))
+                fw._ref = ref
+                return fw
             w._ref = ref
             return w
         if "." in ref:

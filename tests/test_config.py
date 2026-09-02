@@ -116,6 +116,7 @@ right = []
     r = Resolver(cfg, _registry_with_core_button(), lambda mid: None)
     w = r.widget("jarvis")
     assert isinstance(w, Button) and w.icon == "mic"
+    assert w._ref == "jarvis"
 
 
 def test_item_fallback_cycle_ends_in_a_broken_widget():
