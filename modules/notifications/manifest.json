@@ -1,0 +1,2 @@
+{ "schemaVersion": 1, "id": "notifications", "name": "Notifications", "kinds": ["touchbar-module"],
+  "entryPoints": { "touchbarModule": "touchbar.py" }, "touchbarModule": { "apiVersion": 1, "order": 30 } }
