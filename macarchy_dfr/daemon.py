@@ -1,7 +1,6 @@
 """Wire everything together, or forward a command to the running daemon."""
 import json
 import os
-import shlex
 import signal
 import sys
 

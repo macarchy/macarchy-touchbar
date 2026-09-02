@@ -64,7 +64,7 @@ class Module:
         api.log("hello module ready")
 ```
 
-Built-in modules live under `modules/`; drop-in ones are discovered the same way Omarchy shell plugins are, from `~/.config/omarchy/plugins`, and must be enabled in `shell.json` to load. For a reference external module, see [`~/Work/jarvis/plugin/touchbar.py`](https://github.com/macarchy/jarvis/blob/touchbar/plugin/touchbar.py) (github.com/macarchy/jarvis): a `Sprite` in a pill, a scene, and six IPC verbs.
+Built-in modules live under `modules/`; drop-in ones are discovered the same way Omarchy shell plugins are, from `~/.config/omarchy/plugins`, and must be enabled in `shell.json` to load. For a reference external module, see [`~/Work/jarvis/plugin/touchbar.py`](https://github.com/macarchy/jarvis/blob/main/plugin/touchbar.py) (github.com/macarchy/jarvis): a `Sprite` in a pill, a scene, and six IPC verbs.
 
 `api` calls:
 
@@ -134,6 +134,8 @@ Stop the daemon first (`systemctl --user stop macarchy-dfr.service`) — the DRM
 - A module marked broken at runtime is reported by `macarchy-dfr status` and in the journal, but its already-built widgets keep drawing normally instead of showing ⚠. The ⚠ fallback exists (`BrokenWidget`) and covers widgets that fail to resolve or build; swapping live widgets out on a runtime failure lands in a later lot.
 - The grid values shipped differ from the spec's, after calibration on the hardware on 2026-09-02: pills are 60 px (the full height of the bar) rather than 44, glyphs 36 px rather than 24, and buttons 130 px wide. Radius 6, outer margin 8 and 6 px spacing are unchanged.
 - The Jarvis button shows the state and the punctual emotions the FSM sends; the QML mascot's own moods (dnd, low battery, night) are not mirrored on the bar.
+- Sprites draw at integer scale 1 — 56 px on the button and in the scene — rather than the spec's 40/54 px, superseded by lot 1's 60 px pills.
+- A hot takeover restores the fish's sheet from the state file at load, but not the scene: the scene itself only reappears on the next state transition.
 
 ## Design docs
 
