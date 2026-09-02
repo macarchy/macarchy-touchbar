@@ -214,3 +214,35 @@ def test_sprite_draw_no_sheet_and_with_sheet(tmp_path):
     sp1.tick()
     sp1.draw(cr2, p2)
     assert px(s2, 32, 30) == (0, 0, 255)  # blue
+
+
+def test_button_icon_size_param():
+    # Test that a button with icon_size=48 has more icon pixels than default
+    # Draw button with custom size
+    s_large, cr_large, p_large = canvas()
+    b_large = Button(icon="add", icon_size=48)
+    b_large.rect = Rect(10, 0, 130, 60)
+    b_large.draw(cr_large, p_large)
+
+    # Draw button with default size
+    s_default, cr_default, p_default = canvas()
+    b_default = Button(icon="add")
+    b_default.rect = Rect(10, 0, 130, 60)
+    b_default.draw(cr_default, p_default)
+
+    # Count non-black, non-pill-grey pixels in pill area (10 to 140, 0 to 60)
+    pill_grey = (51, 51, 51)
+    def count_ink_pixels(surface):
+        count = 0
+        for y in range(0, 60):
+            for x in range(10, 140):
+                c = px(surface, x, y)
+                if c != (0, 0, 0) and c != pill_grey:
+                    count += 1
+        return count
+
+    large_pixels = count_ink_pixels(s_large)
+    default_pixels = count_ink_pixels(s_default)
+
+    # Larger icon should have more ink
+    assert large_pixels > default_pixels

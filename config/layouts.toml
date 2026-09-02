@@ -16,6 +16,11 @@ widget = "core.button"
 icon = "apps"
 run = "omarchy menu"
 
+[items.jarvis]
+widget = "core.button"
+icon = "mic"
+run = "omarchy-jarvis press"
+
 [items.screenshot]
 widget = "system.screenshot"
 
@@ -42,6 +47,7 @@ keys = ["PreviousSong"]
 [items.playpause]
 widget = "core.button"
 icon = "play_pause"
+icon_size = 46
 keys = ["PlayPause"]
 
 [items.next]
@@ -125,22 +131,22 @@ items = ["screenshot", "clipboard", "emoji", "theme", "system.charge_limit", "sy
 
 # ─── layouts ─────────────────────────────────────────────────────────────────
 [layouts.default]
-left  = ["menu", "core.spacer"]
+left  = ["menu", "jarvis", "core.spacer"]
 right = ["group:media", "group:display", "group:system", "core.clock", "system.battery"]
 
 [layouts.browser]
 match = "firefox|chromium|chrome|brave|zen|vivaldi|epiphany"
-left  = ["menu", "back", "forward", "reload", "newtab", "closetab", "core.spacer"]
+left  = ["menu", "jarvis", "back", "forward", "reload", "newtab", "closetab", "core.spacer"]
 right = ["group:media", "group:display", "group:system", "core.clock", "system.battery"]
 
 [layouts.terminal]
 match = "Alacritty|foot|kitty|ghostty|org\\.wezfurlong"
-left  = ["menu", "copy", "paste", "clear", "core.spacer"]
+left  = ["menu", "jarvis", "copy", "paste", "clear", "core.spacer"]
 right = ["group:media", "group:display", "group:system", "core.clock", "system.battery"]
 
 [layouts.agent]
 match = "org\\.omarchy\\.agent"
-left  = ["menu", "core.spacer"]
+left  = ["menu", "jarvis", "core.spacer"]
 right = ["group:media", "group:display", "group:system", "core.clock", "system.battery"]
 
 # The Fn-held layer. Delete this table for a plain F1–F12 row.

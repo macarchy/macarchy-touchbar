@@ -52,6 +52,7 @@ class Button(Widget):
         self.badge = p.get("badge")
         self.tint = p.get("tint")
         self.width = p.get("width")
+        self.icon_size = int(p.get("icon_size", Theme.ICON))
         self._on_tap = p.get("on_tap")
         self._on_long = p.get("on_long_press")
         self._text_w = None
@@ -72,10 +73,10 @@ class Button(Widget):
         painter.pill(cr, r, color)
         cx = r.x + r.w / 2
         if self.icon and self.text:
-            painter.icon(cr, self.icon, r.x + 28, r.y + r.h / 2, fill=1.0 if self.active else 0.0)
+            painter.icon(cr, self.icon, r.x + 28, r.y + r.h / 2, size=self.icon_size, fill=1.0 if self.active else 0.0)
             painter.text(cr, self.text, Rect(r.x + 48, r.y, r.w - 56, r.h), align="left")
         elif self.icon:
-            painter.icon(cr, self.icon, cx, r.y + r.h / 2, fill=1.0 if self.active else 0.0,
+            painter.icon(cr, self.icon, cx, r.y + r.h / 2, size=self.icon_size, fill=1.0 if self.active else 0.0,
                          tint=(self.tint if (self.tint and not self.active) else Theme.FG))
         elif self.text:
             painter.text(cr, self.text, r)
