@@ -32,8 +32,10 @@ kill %1
 ```
 
 With `$XDG_RUNTIME_DIR/hypr` symlinked at the real one, the headless daemon also picks
-up the focused window and switches layouts, read-only — that is how the second frame
-(the terminal layout) was taken.
+up the focused window and switches layouts, read-only — that is how the frames showing
+the terminal layout were taken. The opening `[layouts.default]` frame came from a second
+run with that symlink absent, so the GIF is a walkthrough in logical order rather than
+one continuous recording; the clock in the first frame gives it away.
 
 Then repeat each frame to give it a dwell time and stitch at a slow frame rate:
 

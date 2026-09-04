@@ -2,7 +2,7 @@
 
 ![macarchy-dfr driving the Touch Bar: the default layout, the terminal layout, and the media, display and system groups opening in place](docs/media/touchbar.gif)
 
-<sub>Every frame above is the daemon's own output — `daemon --headless`, `screenshot out.png`, `touch x,y`, stitched with ffmpeg. Left to right in time: `[layouts.default]`, the same bar with a terminal focused (`copy / paste / clear`), then the media, display and system groups expanding into the left zone.</sub>
+<sub>Every frame above is the daemon's own output — `daemon --headless`, `screenshot out.png`, `touch x,y`, stitched with ffmpeg. In order: `[layouts.default]`, the same bar with a terminal focused (`copy / paste / clear`), then the media, display and system groups expanding into the left zone. The frames are not one chronological run — the default-layout frame was captured separately, with no Hyprland, which is why its clock reads a minute later than the rest.</sub>
 
 A Python daemon that owns the MacBook Touch Bar on Linux, drawing every pixel itself instead of leaning on tiny-dfr's built-in function-key strip. It reads Hyprland's focused window to switch layouts, and modules (built in or dropped in as Omarchy shell plugins) supply the widgets, groups and scenes that fill them.
 
@@ -52,8 +52,10 @@ Worth being clear-eyed about before you mask tiny-dfr:
   the compositor) all working. What you lose is exactly the `match` regexes, the
   `core.app` widget, and the night-light button's *state* — the `display` module polls
   `hyprctl hyprsunset temperature` to know whether to light up, though its tap action is
-  a plain shell command. Those two call sites are the only mentions of Hyprland in the
-  Python source (`install.sh` also edits your Hyprland config, which you can skip).
+  a plain shell command. The coupling is confined: Hyprland lives in one module
+  (`macarchy_dfr/hypr.py`, used only by `daemon.py`) plus a single `hyprctl` call in
+  `modules/display/touchbar.py`. `install.sh` has a Hyprland migration step too, and it
+  skips itself with a printed note when you have no `~/.config/hypr`.
 - **It masks tiny-dfr.** Only one process can drive that CRTC, so `install.sh` runs
   `systemctl disable --now tiny-dfr` then `systemctl mask tiny-dfr`. The daemon's own
   message for a failed `drmModeSetCrtc` says as much: `SetCrtc failed (is tiny-dfr still
@@ -153,7 +155,7 @@ it.
 ./install.sh
 ```
 
-This installs the system packages the daemon needs (`python-cairo`, `python-gobject`, `papirus-icon-theme`, `brightnessctl`), downloads the Material Symbols Rounded font it draws icons with, grants hardware access without root (adds you to the `video` group for the Touch Bar's DRM card, installs a udev rule for `/dev/uinput`), disables and masks `tiny-dfr` so it stops fighting over the display, migrates the Hyprland config off the old daemon (removes the `omarchy-dfr` Touch Bar binding block from `~/.config/hypr/bindings.lua` and points `~/.config/hypr/autostart.lua` at the `macarchy-dfr` user service instead of `omarchy-dfr daemon`, printing what it changed and reloading Hyprland — a no-op once done), symlinks the `macarchy-dfr` CLI into `~/.local/bin`, copies `config/layouts.toml` to `~/.config/macarchy-dfr/layouts.toml` (only if that file doesn't already exist — your edits are never overwritten), and installs + enables the `macarchy-dfr.service` systemd user unit. Re-run it any time to update.
+This installs the system packages the daemon needs (`python-cairo`, `python-gobject`, `papirus-icon-theme`, `brightnessctl`), downloads the Material Symbols Rounded font it draws icons with, grants hardware access without root (adds you to the `video` group for the Touch Bar's DRM card, installs a udev rule for `/dev/uinput`), disables and masks `tiny-dfr` so it stops fighting over the display, migrates the Hyprland config off the old daemon (removes the `omarchy-dfr` Touch Bar binding block from `~/.config/hypr/bindings.lua` and points `~/.config/hypr/autostart.lua` at the `macarchy-dfr` user service instead of `omarchy-dfr daemon`, printing what it changed and reloading Hyprland — a no-op once done, and skipped entirely if you have no `~/.config/hypr`), symlinks the `macarchy-dfr` CLI into `~/.local/bin`, copies `config/layouts.toml` to `~/.config/macarchy-dfr/layouts.toml` (only if that file doesn't already exist — your edits are never overwritten), and installs + enables the `macarchy-dfr.service` systemd user unit. Re-run it any time to update.
 
 ```
 ./install.sh --uninstall
