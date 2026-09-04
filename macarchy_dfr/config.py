@@ -6,7 +6,8 @@ from .groups import Group, GroupButton
 from .layout import Layout, Row
 from .widgets import BrokenWidget
 
-DEFAULTS = {"dim_after": 60, "off_after": 300, "group_timeout": 15, "hud": True, "touch_flip": False}
+DEFAULTS = {"dim_after": 60, "off_after": 300, "group_timeout": 15, "hud": True, "touch_flip": False,
+            "wake_on_input": True}
 
 
 class Config:

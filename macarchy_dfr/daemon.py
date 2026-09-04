@@ -4,6 +4,7 @@ import os
 import signal
 import sys
 
+from .activity import ActivityWatcher, find_activity_devices
 from .backlight import BacklightPolicy, BarBacklight
 from .bar import Bar
 from .config import Config
@@ -134,6 +135,16 @@ def run_daemon(headless=False, config_path=CFG):
             loop.every(0.05, lambda: deliver(rec.tick(loop.now())))
         else:
             log("no Touch Bar touch device found")
+        # The bar sleeps on an idle timer, and "idle" has to mean the whole
+        # machine, not just this one surface: without this it goes dark while
+        # the user is working the trackpad, and only a poke at a dark bar
+        # brings it back.
+        if bar.backlight and config.settings.get("wake_on_input", True):
+            paths = find_activity_devices()
+            if paths:
+                ActivityWatcher.open(loop, paths, bar.backlight.touched)
+            else:
+                log("no trackpad/keyboard found; the bar only wakes on its own touch")
         kbd = find_keyboard_device()
         if kbd:
             try:
