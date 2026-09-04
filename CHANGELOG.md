@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/macarchy/macarchy-dfr/compare/v0.2.0...v0.2.1) (2026-09-04)
+
+
+### Bug Fixes
+
+* add a LICENSE, survive a missing Hyprland config, and speak to tiny-dfr's users ([#6](https://github.com/macarchy/macarchy-dfr/issues/6)) ([f53427b](https://github.com/macarchy/macarchy-dfr/commit/f53427b067ac6e5f8260f7d1d2d2c0e867d0e3e3))
+
 ## [0.2.0](https://github.com/macarchy/macarchy-dfr/compare/v0.1.0...v0.2.0) (2026-09-04)
 
 
