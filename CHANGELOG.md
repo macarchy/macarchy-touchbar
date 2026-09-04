@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.0](https://github.com/macarchy/macarchy-touchbar/compare/v0.3.0...v0.4.0) (2026-09-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename macarchy-dfr to macarchy-touchbar
+
+### Bug Fixes
+
+* drop cleanup line for a unit name that never shipped ([4b16739](https://github.com/macarchy/macarchy-touchbar/commit/4b1673939d216390079affc106b587db21fdd83d))
+* keep the current name out of the migration, restore the dated docs ([8008ae5](https://github.com/macarchy/macarchy-touchbar/commit/8008ae5bd0d93a95c6c92993b8021a8a73213191))
+
+
+### Code Refactoring
+
+* rename macarchy-dfr to macarchy-touchbar ([9e314ae](https://github.com/macarchy/macarchy-touchbar/commit/9e314ae0a9fbf9ee8fabcd11aa803e23fb0b0444))
+
 ## [0.3.0](https://github.com/macarchy/macarchy-touchbar/compare/v0.2.1...v0.3.0) (2026-09-04)
 
 
