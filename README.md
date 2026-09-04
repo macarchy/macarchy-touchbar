@@ -147,3 +147,7 @@ Versions are derived from [Conventional Commits](https://www.conventionalcommits
 by release-please: pushing to `main` keeps a release PR up to date, and merging
 it tags `vX.Y.Z`. PRs land squash-merged, so it is the **PR title** that decides
 the bump — `fix:` patch, `feat:` minor, `feat!:` major.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
