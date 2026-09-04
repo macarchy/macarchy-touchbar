@@ -5,6 +5,7 @@ The panel is 60 wide by 2008 tall (portrait); everyone else thinks in a
 must be 64 px wide (pitch 256): at 60 the panel shows hatching.
 """
 import ctypes as C
+import glob
 import math
 import mmap
 import os
@@ -128,6 +129,62 @@ def _libdrm():
     return lib
 
 
+def card_candidates(root="/dev/dri"):
+    """Every DRM card node worth probing, most promising first.
+
+    The Touch Bar's card number is not stable: the GPU, the internal panel
+    and the Touch Bar's display pipe race to probe, so a node hardcoded from
+    one boot points at the 2560x1600 panel on the next. The by-path link
+    names the display pipe by its platform address instead of its node, so
+    try that first, then fall back to scanning every card.
+    """
+    links = sorted(glob.glob(os.path.join(root, "by-path", "*display-pipe-card")))
+    seen, out = set(), []
+    for path in links + sorted(glob.glob(os.path.join(root, "card*"))):
+        real = os.path.realpath(path)
+        if real not in seen:
+            seen.add(real)
+            out.append(path)
+    return out
+
+
+def _touch_bar_connector(lib, fd):
+    """The connected connector of a Touch-Bar-shaped output, or (None, why)."""
+    res = lib.drmModeGetResources(fd)
+    if not res:
+        return None, "no DRM resources"
+    r = res.contents
+    for i in range(r.count_connectors):
+        c = lib.drmModeGetConnector(fd, r.connectors[i]).contents
+        if c.connection != 1 or not c.count_modes:
+            continue
+        mode = c.modes[0]
+        # the panel is 60 wide by 2008 tall: portrait, and extremely so
+        if mode.vdisplay >= 30 * mode.hdisplay:
+            return c, None
+        return None, f"{mode.hdisplay}x{mode.vdisplay} is not a Touch Bar"
+    return None, "no connected connector"
+
+
+def _find_card(lib, paths, opener=None, closer=None):
+    """Open the first card that is a Touch Bar. Returns (fd, path, connector)."""
+    opener = opener or (lambda p: os.open(p, os.O_RDWR | os.O_CLOEXEC))
+    closer = closer or os.close
+    tried = []
+    for path in paths:
+        try:
+            fd = opener(path)
+        except OSError as e:
+            tried.append(f"{path}: {e.strerror}")
+            continue
+        conn, why = _touch_bar_connector(lib, fd)
+        if conn is not None:
+            return fd, path, conn
+        closer(fd)
+        tried.append(f"{path}: {why}")
+    raise OSError("no Touch Bar among the DRM cards (" + "; ".join(tried) + ")")
+
+
 class DrmOutput(Output):
     def __init__(self, fd, lib, crtc, conn_id, mode, fb, mm, pitch):
         super().__init__(mode.vdisplay, mode.hdisplay)      # landscape = (2008, 60)
@@ -138,26 +195,13 @@ class DrmOutput(Output):
             mm, cairo.FORMAT_ARGB32, BUFFER_WIDTH, self.width, pitch)
 
     @classmethod
-    def open(cls, path="/dev/dri/card3"):
+    def open(cls, path=None):
         lib = _libdrm()
-        fd = os.open(path, os.O_RDWR | os.O_CLOEXEC)
-        res = lib.drmModeGetResources(fd)
-        if not res:
-            raise OSError(f"{path}: no DRM resources")
-        r = res.contents
-        conn = None
-        for i in range(r.count_connectors):
-            c = lib.drmModeGetConnector(fd, r.connectors[i]).contents
-            if c.connection == 1 and c.count_modes:
-                conn = c
-                break
-        if conn is None:
-            raise OSError(f"{path}: no connected connector")
+        fd, path, conn = _find_card(lib, [path] if path else card_candidates())
         mode = conn.modes[0]
-        if mode.vdisplay < 30 * mode.hdisplay:
-            raise OSError(f"{path}: {mode.hdisplay}x{mode.vdisplay} does not look like a Touch Bar")
         enc = lib.drmModeGetEncoder(fd, conn.encoder_id)
-        crtc = enc.contents.crtc_id if enc and enc.contents.crtc_id else r.crtcs[0]
+        crtc = enc.contents.crtc_id if enc and enc.contents.crtc_id else \
+            lib.drmModeGetResources(fd).contents.crtcs[0]
         handle, pitch, size = C.c_uint32(), C.c_uint32(), C.c_uint64()
         if lib.drmModeCreateDumbBuffer(fd, BUFFER_WIDTH, mode.vdisplay, 32, 0,
                                        C.byref(handle), C.byref(pitch), C.byref(size)):
