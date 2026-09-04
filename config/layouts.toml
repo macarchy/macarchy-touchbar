@@ -49,12 +49,6 @@ widget = "core.button"
 icon = "skip_previous"
 keys = ["PreviousSong"]
 
-[items.playpause]
-widget = "core.button"
-icon = "play_pause"
-icon_size = 46
-keys = ["PlayPause"]
-
 [items.next]
 widget = "core.button"
 icon = "skip_next"
@@ -64,16 +58,6 @@ keys = ["NextSong"]
 widget = "core.button"
 icon = "volume_off"
 keys = ["Mute"]
-
-[items.voldown]
-widget = "core.button"
-icon = "volume_down"
-keys = ["VolumeDown"]
-
-[items.volup]
-widget = "core.button"
-icon = "volume_up"
-keys = ["VolumeUp"]
 
 [items.micmute]
 widget = "core.button"
@@ -123,7 +107,8 @@ keys = ["LeftCtrl", "L"]
 # ─── groups (Control Strip) ──────────────────────────────────────────────────
 [groups.media]
 icon = "music_note"
-items = ["prev", "playpause", "next", "mute", "voldown", "volup", "micmute"]
+items = ["media.art", "prev", "media.playpause", "next", "media.volume", "mute", "micmute"]
+slide_into = "media.volume"
 
 [groups.display]
 icon = "brightness_6"
@@ -136,22 +121,22 @@ items = ["screenshot", "clipboard", "emoji", "theme", "system.charge_limit", "sy
 
 # ─── layouts ─────────────────────────────────────────────────────────────────
 [layouts.default]
-left  = ["menu", "jarvis", "core.spacer"]
+left  = ["menu", "jarvis", "media.art", "media.now"]
 right = ["group:media", "group:display", "group:system", "core.clock", "system.battery"]
 
 [layouts.browser]
 match = "firefox|chromium|chrome|brave|zen|vivaldi|epiphany"
-left  = ["menu", "jarvis", "back", "forward", "reload", "newtab", "closetab", "core.spacer"]
+left  = ["menu", "jarvis", "back", "forward", "reload", "newtab", "closetab", "media.art", "media.now"]
 right = ["group:media", "group:display", "group:system", "core.clock", "system.battery"]
 
 [layouts.terminal]
 match = "Alacritty|foot|kitty|ghostty|org\\.wezfurlong"
-left  = ["menu", "jarvis", "copy", "paste", "clear", "core.spacer"]
+left  = ["menu", "jarvis", "copy", "paste", "clear", "media.art", "media.now"]
 right = ["group:media", "group:display", "group:system", "core.clock", "system.battery"]
 
 [layouts.agent]
 match = "org\\.omarchy\\.agent"
-left  = ["menu", "jarvis", "core.spacer"]
+left  = ["menu", "jarvis", "media.art", "media.now"]
 right = ["group:media", "group:display", "group:system", "core.clock", "system.battery"]
 
 # The Fn-held layer. Delete this table for a plain F1–F12 row.
