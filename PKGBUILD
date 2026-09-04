@@ -4,7 +4,12 @@
 # are kept honest by tests/test_pkgbuild.py, which fails if either grows a file
 # the other does not carry.
 pkgname=macarchy-touchbar
-pkgver=0.4.0 # x-release-please-version
+# Rewritten from the tag by the packaging job before makepkg runs, so the built
+# package can never disagree with the release it is attached to. The value here
+# is the fallback for a manual `makepkg` from a checkout; release-please used to
+# maintain it through extra-files, which made it fail to build a release PR at all
+# ("unexpected token '(' at 6:32"). One less coupling.
+pkgver=0.4.0
 pkgrel=1
 pkgdesc="A Touch Bar daemon for MacBooks on Linux — draws every pixel over DRM, follows the focused app, takes modules"
 arch=('any')

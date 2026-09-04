@@ -7,10 +7,7 @@
       "release-type": "simple",
       "package-name": "macarchy-touchbar",
       "include-component-in-tag": false,
-      "changelog-path": "CHANGELOG.md",
-      "extra-files": [
-        "PKGBUILD"
-      ]
+      "changelog-path": "CHANGELOG.md"
     }
   }
 }

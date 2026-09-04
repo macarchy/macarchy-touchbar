@@ -80,12 +80,16 @@ def test_the_package_is_arch_independent():
     assert "arch=('any')" in PKG_CODE
 
 
-def test_pkgver_is_maintained_by_release_please():
-    # Without the marker, release-please stops bumping pkgver and a release
-    # ships a package whose version is the previous tag's — silently.
-    assert "x-release-please-version" in PKG_CODE
+def test_pkgver_comes_from_the_tag_at_build_time():
+    # release-please's extra-files updater could not parse this file and failed
+    # to build a release PR at all. The packaging job rewrites pkgver from the
+    # tag instead, which is stricter: the package cannot carry a version the
+    # release does not, and there is no config coupling left to break.
+    wf = (ROOT / ".github" / "workflows" / "release-please.yml").read_text()
+    assert 's/^pkgver=.*/pkgver=${TAG#v}/' in wf
+    assert 'grep -q "^pkgver=${TAG#v}$" PKGBUILD' in wf, "the rewrite must be checked, not hoped"
     cfg = json.loads((ROOT / "release-please-config.json").read_text())
-    assert "PKGBUILD" in cfg["packages"]["."]["extra-files"]
+    assert "extra-files" not in cfg["packages"]["."]
 
 
 def test_the_codepoints_are_shipped_and_not_skipped():
