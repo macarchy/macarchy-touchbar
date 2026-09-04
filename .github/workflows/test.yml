@@ -1,0 +1,40 @@
+name: tests
+
+# The suite is 128 tests in ~3 seconds and it ran nowhere but the author's
+# laptop: PR #1 was merged with no checks at all. Everything that needs the
+# real Touch Bar, /dev/uinput or the Material Symbols font is already gated
+# and skips here, so a plain runner is enough.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # The system python3 on purpose: PyGObject and pycairo come from apt and
+      # are bound to that interpreter, so actions/setup-python would not see
+      # them.
+      - name: Install cairo, Pango and GdkPixbuf for python3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3-gi python3-gi-cairo python3-cairo python3-pytest \
+            gir1.2-pango-1.0 gir1.2-gdkpixbuf-2.0
+
+      - name: Show what will run
+        run: python3 -c "import cairo, gi; print('pycairo', cairo.version); print('gi', gi.__version__)"
+
+      - run: python3 -m pytest tests/ -q
