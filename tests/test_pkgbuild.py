@@ -11,6 +11,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PKGBUILD = (ROOT / "PKGBUILD").read_text()
+# Comments mention every artefact by name, so a substring match over the whole
+# file passes even when the install line is gone. Match the code.
+PKG_CODE = "\n".join(l for l in PKGBUILD.splitlines() if not l.lstrip().startswith("#"))
 INSTALL = (ROOT / "install.sh").read_text()
 
 # What install.sh actually COPIES onto the machine. The package must carry each
@@ -33,7 +36,7 @@ ARTEFACTS = INSTALLED + USED_IN_PLACE
 
 
 def test_the_package_carries_everything_install_sh_does():
-    missing = [a for a in ARTEFACTS if a not in PKGBUILD]
+    missing = [a for a in ARTEFACTS if a not in PKG_CODE]
     assert not missing, f"install.sh installs {missing}; PKGBUILD does not mention them"
 
 
@@ -58,26 +61,29 @@ def test_the_font_is_pinned_with_a_checksum():
     # install.sh curls it from master, unpinned: the file changed between 2 Sep
     # and 5 Sep. A package must be reproducible, so the URL carries a commit and
     # the source carries a real sha256 rather than SKIP.
-    assert re.search(r"raw\.githubusercontent\.com/google/material-design-icons/[0-9a-f]{40}/", PKGBUILD)
-    sums = re.search(r"sha256sums=\((.*?)\)", PKGBUILD, re.S).group(1).split()
+    assert re.search(r"raw\.githubusercontent\.com/google/material-design-icons/[0-9a-f]{40}/", PKG_CODE)
+    sums = re.search(r"sha256sums=\((.*?)\)", PKG_CODE, re.S).group(1).split()
     assert len(sums) == 3, "expected three sources: the tarball, the font and its codepoints"
     assert any(re.fullmatch(r"'[0-9a-f]{64}'", s) for s in sums), "the font must carry a real checksum"
 
 
 def test_site_packages_is_derived_not_hardcoded():
     # It carries the interpreter version (python3.14 today).
-    assert "python3." not in PKGBUILD.replace("python3 ", "")
-    assert "sysconfig" in PKGBUILD
+    # No site-packages at all now: the python package is co-located with its
+    # data under /usr/share, which is what keeps arch=('any') honest.
+    assert "sysconfig" not in PKG_CODE
+    assert "site-packages" not in PKG_CODE
+    assert not re.search(r"python3\.\d", PKG_CODE)
 
 
 def test_the_package_is_arch_independent():
-    assert "arch=('any')" in PKGBUILD
+    assert "arch=('any')" in PKG_CODE
 
 
 def test_pkgver_is_maintained_by_release_please():
     # Without the marker, release-please stops bumping pkgver and a release
     # ships a package whose version is the previous tag's — silently.
-    assert "x-release-please-version" in PKGBUILD
+    assert "x-release-please-version" in PKG_CODE
     cfg = json.loads((ROOT / "release-please-config.json").read_text())
     assert "PKGBUILD" in cfg["packages"]["."]["extra-files"]
 
@@ -85,21 +91,47 @@ def test_pkgver_is_maintained_by_release_please():
 def test_the_codepoints_are_shipped_and_not_skipped():
     # draw.py:57 opens them; they are gitignored so they are absent from the
     # release tarball. A `|| true` here would ship a bar with no icons.
-    assert "codepoints" in PKGBUILD
-    code = [l for l in PKGBUILD.splitlines() if not l.lstrip().startswith("#")]
-    assert not [l for l in code if "|| true" in l], "a silent skip in package()"
+    assert "codepoints" in PKG_CODE
+    assert "|| true" not in PKG_CODE, "a silent skip in package()"
 
 
-def test_the_workflow_only_runs_on_a_published_release():
-    # The PKGBUILD's source is the release tarball, which does not exist before
-    # the tag does — a push or pull_request trigger could only ever fail.
-    wf = (ROOT / ".github" / "workflows" / "package.yml").read_text()
-    assert "release:" in wf and "types: [published]" in wf
-    code = [l for l in wf.splitlines() if not l.lstrip().startswith("#")]
-    assert not [l for l in code if l.strip() in ("push:", "pull_request:")]
+def test_the_package_job_lives_where_it_will_actually_fire():
+    # A `release: [published]` trigger never fires on the real path: release-please
+    # creates the Release with GITHUB_TOKEN, and GitHub raises no workflow run from
+    # a GITHUB_TOKEN event. The job has to hang off release-please's own output.
+    assert not (ROOT / ".github" / "workflows" / "package.yml").exists()
+    wf = (ROOT / ".github" / "workflows" / "release-please.yml").read_text()
+    assert "release_created" in wf
+    assert "types: [published]" not in wf
 
 
 def test_the_upload_globs_and_clobbers():
-    wf = (ROOT / ".github" / "workflows" / "package.yml").read_text()
+    wf = (ROOT / ".github" / "workflows" / "release-please.yml").read_text()
     assert "*.pkg.tar.*" in wf, "hardcoding an extension uploads nothing when PKGEXT differs"
     assert "--clobber" in wf, "a re-run must replace the asset, not fail"
+
+
+def test_the_package_job_builds_the_tag_not_the_branch():
+    # Without an explicit ref a manual re-run checks out the default branch and
+    # clobbers an old release with a package built from a different tag.
+    wf = (ROOT / ".github" / "workflows" / "release-please.yml").read_text()
+    assert "ref: ${{ needs.release-please.outputs.tag_name" in wf
+    assert "github-cli" in wf, "gh lives on the runner, not inside the container"
+    assert "pacman -Syu" in wf, "a partial upgrade reads as a build bug"
+
+
+def test_the_unit_is_repointed_away_from_HOME():
+    # The shipped unit says %h/.local/bin/… because install.sh symlinks there; a
+    # package install writes nothing into $HOME, so shipping it verbatim gives
+    # 203/EXEC and ten restarts from a package that installed perfectly.
+    assert "%h/" in (ROOT / "systemd" / "macarchy-touchbar.service").read_text()
+    assert "sed 's|%h/" in PKG_CODE and "/usr/bin/" in PKG_CODE
+
+
+def test_there_is_a_scriptlet_for_what_pacman_cannot_do():
+    # usermod -aG video, modprobe uinput and masking tiny-dfr are install.sh's
+    # non-file half. pacman does none of it; silence would leave a blank bar.
+    assert "install=macarchy-touchbar.install" in PKG_CODE
+    s = (ROOT / "macarchy-touchbar.install").read_text()
+    for step in ("video", "uinput", "tiny-dfr"):
+        assert step in s

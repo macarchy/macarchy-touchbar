@@ -14,8 +14,14 @@ on:
   push:
     branches: [main]
   # Manual re-run, e.g. after a token or permission failure. Idempotent: it re-opens or refreshes
-  # the same release PR rather than creating a second one.
+  # the same release PR rather than creating a second one. `package_tag` re-runs
+  # ONLY the packaging job for an existing tag, for a build that failed.
   workflow_dispatch:
+    inputs:
+      package_tag:
+        description: "Re-build and re-attach the package for this tag (e.g. v0.4.1). Leave empty for a normal run."
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -31,9 +37,65 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: googleapis/release-please-action@v5
+        id: release
         with:
           target-branch: main
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+  # Attaches an installable package to the release the job above just cut, so a
+  # release is something you can `pacman -U` instead of a source zip.
+  #
+  # IT LIVES HERE, not in a workflow keyed on `release: [published]`, and that is
+  # the whole point: release-please creates the Release with the default
+  # GITHUB_TOKEN, and GitHub does not start workflow runs from events raised by
+  # GITHUB_TOKEN. A `release: published` trigger would never fire on the real
+  # path -- and would leave no failed run in the Actions tab to notice. This repo
+  # has already paid for that lesson once.
+  package:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true' || inputs.package_tag != ''
+    runs-on: ubuntu-latest
+    # arch=('any'), so the x86_64 image is honest here: nothing is compiled, and
+    # the python package is co-located with its data rather than dropped into the
+    # BUILDING interpreter's site-packages. A repo that really compiles needs the
+    # other treatment -- macarchy-install#18.
+    container: archlinux:base-devel
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The tag, never the default branch: re-running for an older tag must
+          # not build main's PKGBUILD and clobber that package onto the old release.
+          ref: ${{ needs.release-please.outputs.tag_name || inputs.package_tag }}
+
+      - name: Build the package
+        # -Syu, not -Sy: a partial upgrade can link the fresh python against a
+        # glibc this image does not have, and it reads as a build bug.
+        # github-cli because `gh` lives on the RUNNER, not inside the container.
+        # makepkg refuses to run as root, so it gets a throwaway user.
+        # --nodeps because `depends` is a runtime contract for the target machine.
+        run: |
+          pacman -Syu --noconfirm --needed git python github-cli
+          useradd -m build && chown -R build:build .
+          su build -c 'makepkg -f --nodeps --noconfirm'
+          ls -l ./*.pkg.tar.*
+
+      - name: Attach it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag_name || inputs.package_tag }}
+        # A GLOB, not a name: PKGEXT is .zst here and .xz on the maintainer's
+        # machine, and hardcoding either uploads nothing on the other. The version
+        # check is what stops a mis-targeted manual re-run from clobbering an old
+        # release with a package built from a different tag.
+        run: |
+          test -n "$(echo ./*.pkg.tar.* )"
+          ls ./*.pkg.tar.* | grep -q "${TAG#v}" \
+            || { echo "built package does not carry $TAG — refusing to upload"; exit 1; }
+          gh release upload "$TAG" ./*.pkg.tar.* --clobber --repo "$GITHUB_REPOSITORY"

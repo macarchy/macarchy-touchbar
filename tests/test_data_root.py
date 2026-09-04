@@ -1,19 +1,20 @@
 """Where the daemon looks for modules/, config/ and fonts/.
 
-It used to be one directory above the python package — true in a git checkout,
-where that is the repo root, and false in every other layout. A system package
-puts macarchy_touchbar/ in site-packages/, so `ROOT` became
-/usr/lib/pythonX.Y/site-packages/ and the daemon looked for modules/ there.
-macarchy-install#16.
+The data sits one directory above the python package. That was already true in a
+git checkout; the packaging work kept it true rather than adding a second layout,
+by installing macarchy_touchbar/ NEXT TO modules/ and config/ under
+/usr/share/macarchy-touchbar. macarchy-install#16.
 
-The checkout fallback is the one that must never break: ./install.sh symlinks
+The checkout case is the one that must never break: ./install.sh symlinks
 bin/macarchy-touchbar out of the repo and everything still has to resolve.
 """
 import os
-
-import pytest
+import subprocess
+import sys
 
 from macarchy_touchbar import paths
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def test_the_env_var_wins(tmp_path, monkeypatch):
@@ -21,31 +22,47 @@ def test_the_env_var_wins(tmp_path, monkeypatch):
     assert paths.data_root() == str(tmp_path)
 
 
-def test_the_packaged_directory_is_used_when_it_exists(tmp_path, monkeypatch):
-    monkeypatch.delenv("MACARCHY_TOUCHBAR_DATA", raising=False)
-    packaged = tmp_path / "usr" / "share" / "macarchy-touchbar"
-    (packaged / "modules").mkdir(parents=True)
-    monkeypatch.setattr(paths, "PACKAGED", str(packaged))
-    assert paths.data_root() == str(packaged)
-
-
-def test_the_checkout_is_the_fallback(tmp_path, monkeypatch):
-    # No env var, no packaged directory: the repo root, exactly as before.
-    monkeypatch.delenv("MACARCHY_TOUCHBAR_DATA", raising=False)
-    monkeypatch.setattr(paths, "PACKAGED", str(tmp_path / "nowhere"))
-    assert os.path.isdir(os.path.join(paths.data_root(), "modules"))
-
-
-def test_a_checkout_really_resolves_layouts_toml(monkeypatch):
-    # The bug from the other side: a root that resolves but holds no config.
-    monkeypatch.delenv("MACARCHY_TOUCHBAR_DATA", raising=False)
-    assert os.path.isfile(os.path.join(paths.data_root(), "config", "layouts.toml"))
-
-
 def test_an_env_var_pointing_nowhere_is_still_honoured(tmp_path, monkeypatch):
-    # Explicit beats clever: if someone sets it, they meant it, and a silent
-    # fallback to the checkout would hide their typo until the daemon drew a
-    # bar with no modules on it.
+    # Explicit beats clever: a silent fallback would hide the typo until the bar
+    # came up with no modules on it.
     missing = tmp_path / "gone"
     monkeypatch.setenv("MACARCHY_TOUCHBAR_DATA", str(missing))
     assert paths.data_root() == str(missing)
+
+
+def test_the_data_sits_beside_the_code(monkeypatch):
+    monkeypatch.delenv("MACARCHY_TOUCHBAR_DATA", raising=False)
+    root = paths.data_root()
+    assert os.path.isdir(os.path.join(root, "modules"))
+    assert os.path.isfile(os.path.join(root, "config", "layouts.toml"))
+    assert os.path.isdir(os.path.join(root, "macarchy_touchbar"))
+
+
+def test_a_package_layout_resolves_the_same_way(tmp_path, monkeypatch):
+    # Simulate /usr/share/macarchy-touchbar: the python package beside the data.
+    # No special case in data_root() is what makes the two layouts one rule.
+    monkeypatch.delenv("MACARCHY_TOUCHBAR_DATA", raising=False)
+    share = tmp_path / "share" / "macarchy-touchbar"
+    (share / "macarchy_touchbar").mkdir(parents=True)
+    (share / "modules").mkdir()
+    (share / "macarchy_touchbar" / "paths.py").write_text(
+        (ROOT / "macarchy_touchbar" / "paths.py").read_text()
+        if hasattr(ROOT, "__truediv__") else
+        open(os.path.join(ROOT, "macarchy_touchbar", "paths.py")).read())
+    (share / "macarchy_touchbar" / "__init__.py").write_text("")
+    out = subprocess.run(
+        [sys.executable, "-c",
+         "import sys; sys.path.insert(0, %r);"
+         "from macarchy_touchbar.paths import data_root; print(data_root())" % str(share)],
+        capture_output=True, text=True, env={k: v for k, v in os.environ.items()
+                                             if k != "MACARCHY_TOUCHBAR_DATA"})
+    assert out.stdout.strip() == str(share), out.stderr
+
+
+def test_the_launcher_finds_the_tree_in_a_packaged_layout(tmp_path):
+    # bin/macarchy-touchbar sits in /usr/bin once packaged, so "one level up" is
+    # /usr and useless — it has to search. This is the bootstrap that makes the
+    # single rule above work from an installed binary.
+    launcher = open(os.path.join(ROOT, "bin", "macarchy-touchbar")).read()
+    assert "/usr/share/macarchy-touchbar" in launcher
+    assert "MACARCHY_TOUCHBAR_DATA" in launcher

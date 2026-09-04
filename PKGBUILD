@@ -10,6 +10,7 @@ pkgdesc="A Touch Bar daemon for MacBooks on Linux — draws every pixel over DRM
 arch=('any')
 url="https://github.com/macarchy/macarchy-touchbar"
 license=('MIT')
+install=macarchy-touchbar.install
 depends=('python' 'python-cairo' 'python-gobject' 'brightnessctl')
 optdepends=('papirus-icon-theme: application icons on the bar'
             'tiny-dfr: what install.sh --uninstall hands the bar back to')
@@ -28,16 +29,14 @@ package() {
 
   install -Dm755 bin/macarchy-touchbar "$pkgdir/usr/bin/macarchy-touchbar"
 
-  # Derived, never hardcoded: it carries the interpreter version.
-  local site
-  site=$(python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
-  install -d "$pkgdir$site"
-  cp -r macarchy_touchbar "$pkgdir$site/"
-
-  # What the daemon reads at runtime. paths.data_root() looks here when it
-  # exists, and falls back to the checkout otherwise, so both channels work.
+  # Code and data together under /usr/share, NOT the python package in
+  # site-packages. site-packages would bake the BUILDING interpreter's version
+  # into an arch=('any') artifact: this is built in a container whose python is
+  # routinely ahead of Asahi's, and the target would then get ImportError while
+  # depends=('python') claims to be satisfied. Co-located, "one directory above
+  # the package" resolves in both layouts and there is one rule, not two.
   install -d "$pkgdir/usr/share/$pkgname"
-  cp -r modules config "$pkgdir/usr/share/$pkgname/"
+  cp -r macarchy_touchbar modules config "$pkgdir/usr/share/$pkgname/"
 
   install -Dm644 "$srcdir/MaterialSymbolsRounded.ttf" \
     "$pkgdir/usr/share/fonts/TTF/MaterialSymbolsRounded.ttf"
@@ -52,7 +51,14 @@ package() {
     "$pkgdir/usr/lib/udev/rules.d/70-macarchy-touchbar.rules"
   install -Dm644 modules-load.d/macarchy-touchbar.conf \
     "$pkgdir/usr/lib/modules-load.d/macarchy-touchbar.conf"
-  install -Dm644 systemd/macarchy-touchbar.service \
+  # The shipped unit says ExecStart=%h/.local/bin/… because install.sh symlinks
+  # the CLI there. A package install never writes into $HOME, so shipping it
+  # verbatim would give 203/EXEC, ten restarts to StartLimitBurst, and an
+  # OnFailure toast -- from a package that installed perfectly.
+  sed 's|%h/\.local/bin/|/usr/bin/|' systemd/macarchy-touchbar.service \
+    > "$srcdir/macarchy-touchbar.service.pkg"
+  grep -q '^ExecStart=/usr/bin/' "$srcdir/macarchy-touchbar.service.pkg"   # or fail the build
+  install -Dm644 "$srcdir/macarchy-touchbar.service.pkg" \
     "$pkgdir/usr/lib/systemd/user/macarchy-touchbar.service"
 
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
