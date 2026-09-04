@@ -4,8 +4,13 @@ fonts/*.ttf
 fonts/*.codepoints
 .superpowers/
 
-# implement-issue / merge-pr build their worktrees here. Unignored, a stray
-# `git add -A` stages a whole second checkout — so both skills refuse to
-# create one until this rule exists.
+# Agent scratch. Three artifacts of one class turned up one at a time — two
+# worktree homes the kit's guard refuses to work without, then the decision log
+# decide.sh refuses to write — so they are listed together rather than a line at
+# a time as the next one is discovered.
+#
+# NOT a blanket `.claude/*`: .claude/skills/repo-profile.md is committed on
+# purpose, and jarvis also tracks .claude/settings.json. Enumerated, not clever.
 .claude/worktrees/
+.claude/decision-events.jsonl
 .worktrees/
