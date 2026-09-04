@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/macarchy/macarchy-dfr/compare/v0.2.1...v0.3.0) (2026-09-04)
+
+
+### Features
+
+* **media:** show what is playing and the output volume on the bar ([#7](https://github.com/macarchy/macarchy-dfr/issues/7)) ([dd667be](https://github.com/macarchy/macarchy-dfr/commit/dd667be58e5694a6da66c446f73bcf295a445cf1))
+
 ## [0.2.1](https://github.com/macarchy/macarchy-dfr/compare/v0.2.0...v0.2.1) (2026-09-04)
 
 
