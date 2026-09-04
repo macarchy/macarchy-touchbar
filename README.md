@@ -264,6 +264,7 @@ The daemon can be driven and inspected entirely from the terminal, which matters
 - `macarchy-dfr daemon --headless` runs the full engine against an in-memory surface instead of the real DRM output — useful under a test harness or when the physical bar is in use by something else.
 - `macarchy-dfr screenshot out.png` renders whatever the bar (headless or real) currently shows to a PNG you can open normally.
 - `macarchy-dfr touch x,y [x2,y2] [--long]` injects a synthetic touch gesture — a tap, a drag between two points, or a long-press — so a module's behavior can be exercised without physically touching the hardware.
+- Modules answer for themselves: `macarchy-dfr media status` prints the player, the track and the volume the bar is showing as one line.
 
 ## Hardware tests
 
@@ -283,6 +284,16 @@ Stop the daemon first (`systemctl --user stop macarchy-dfr.service`) — the DRM
 - The Jarvis button shows the state and the punctual emotions the FSM sends; the QML mascot's own moods (dnd, low battery, night) are not mirrored on the bar.
 - Sprites draw at integer scale 1 — 56 px on the button and in the scene — rather than the spec's 40/54 px, superseded by lot 1's 60 px pills.
 - A hot takeover restores the fish's sheet from the state file at load, but not the scene: the scene itself only reappears on the next state transition.
+
+## Known deviations from the spec (lot 3)
+
+Lot 3 is the `media` module: `media.now` and `media.art` sit on the default bar (Now Playing, with the cover or the player's app icon), and the media group holds `media.playpause` and a `media.volume` slider you can slide straight into from the group button. Now Playing is read from `omarchy-shell media status` — the shell's own MPRIS client, which already picks the active player — pushed by a `busctl --user monitor` doorbell; the volume is polled with `pactl`, but only while the group is open. `playerctl` and `cava` are deliberately **not** dependencies.
+
+- **The auto-popping volume/brightness HUD scene was not built.** The only keyboard `/proc/bus/input/devices` lists on this machine is `Apple MTP keyboard`: Mac14,7 has no physical volume or brightness keys (the F-row *is* the Touch Bar), so the spec's trigger "while those keys are pressed" has no source. `Bar.current_layout()` returns `scenes.top().layout`, so a priority-20 scene replaces the whole bar and covers the very slider it was fired from; and `omarchy-audio-output-volume` already ends in `omarchy-osd -i volume-high -p N`, so it would be a second copy of a display that exists. The trigger to add it is an external keyboard with a real media row, and it is then a `pactl subscribe` doorbell plus `api.show_scene`, with this module's volume `Slider` as the scene body. `[settings] hud` stays inert, exactly as it is today.
+- **The spectrum analyser was not built.** `cava` is not installed here, it needs a continuous FFT process and a 30 fps full-width repaint of a 2008×60 buffer against a daemon whose `activity.py` and `backlight.py` exist to *stop* drawing. `Meter.set_bands` already takes the data, so add it gated on the media group being open and the backlight awake.
+- **No draggable timeline.** The `Scrubber` widget is lot 4, and MPRIS never signals `Position` — reading it means a subprocess a second for as long as anything plays.
+- **The title does not scroll and `prev`/`next` never grey out.** `Painter.text` ellipsizes by default; a marquee would be a permanent 30 fps invalidation of the widest widget on the bar. `canGoNext` / `canGoPrevious` are in the status JSON, but `Button` has no disabled state — that lands with the first engine-side one, not before.
+- **Upgrading:** `install.sh` never overwrites an existing `~/.config/macarchy-dfr/layouts.toml`, so the media group, `slide_into = "media.volume"` and the `media.art` / `media.now` entries in the `left` rows have to be copied across by hand from `config/layouts.toml`.
 
 ## Design docs
 
