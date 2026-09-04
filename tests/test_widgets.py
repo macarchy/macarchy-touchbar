@@ -251,8 +251,10 @@ def test_button_icon_size_param():
     assert large_pixels > default_pixels
 
 
+@pytest.mark.skipif(not icon_font_available(), reason="Material Symbols Rounded not installed")
 def test_button_with_icon_and_text_honours_tint():
-    # Test that a button with icon+text and tint draws the tint color in the icon area
+    # Counts glyph pixels, so it needs the real glyph: without the font Pango
+    # draws a fallback box that fills the icon area and the counts invert.
     s, cr, p = canvas()
     b = Button(icon="battery_full", text="66 %", tint=Theme.ACCENT_GREEN)
     b.rect = Rect(10, 0, 130, 60)
