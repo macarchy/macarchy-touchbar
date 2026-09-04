@@ -8,7 +8,10 @@ PartOf=graphical-session.target
 # say so.
 StartLimitIntervalSec=120
 StartLimitBurst=10
-OnFailure=macarchy-dfr-failed.service
+# The notifier is shared now: one macarchy-failed@.service instance per unit,
+# shipped by macarchy-install, so every macarchy daemon says the same thing the
+# same way and systemd's own StartLimit is the rate limiter.
+OnFailure=macarchy-failed@%n.service
 
 [Service]
 Type=simple
