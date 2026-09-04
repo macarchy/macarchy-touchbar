@@ -1,6 +1,151 @@
 # macarchy-dfr
 
+![macarchy-dfr driving the Touch Bar: the default layout, the terminal layout, and the media, display and system groups opening in place](docs/media/touchbar.gif)
+
+<sub>Every frame above is the daemon's own output — `daemon --headless`, `screenshot out.png`, `touch x,y`, stitched with ffmpeg. Left to right in time: `[layouts.default]`, the same bar with a terminal focused (`copy / paste / clear`), then the media, display and system groups expanding into the left zone.</sub>
+
 A Python daemon that owns the MacBook Touch Bar on Linux, drawing every pixel itself instead of leaning on tiny-dfr's built-in function-key strip. It reads Hyprland's focused window to switch layouts, and modules (built in or dropped in as Omarchy shell plugins) supply the widgets, groups and scenes that fill them.
+
+## Coming from tiny-dfr
+
+[tiny-dfr](https://github.com/AsahiLinux/tiny-dfr) is the reason this hardware works at
+all on Linux, and everything here stands on the ground it broke. macarchy-dfr does not
+replace it upstream — it takes the panel over on one machine, and `install.sh` masks
+tiny-dfr so the two never fight over the display.
+
+If you have been carrying a patched tiny-dfr fork around because you wanted one more
+button on the bar, this section is for you.
+
+### What you get
+
+- **The bar is composed, not configured.** The daemon opens the Touch Bar's DRM card,
+  drives its own 64-px-wide dumb buffer and draws every pixel with cairo: pills,
+  Material Symbols glyphs, app icons, sliders, meters, animated sprites. A widget is a
+  Python object with `measure()`, `draw()` and gesture handlers — not an entry in a
+  fixed vocabulary.
+- **The row follows the focused window.** A `[layouts.<name>]` table takes a `match`
+  regex tried against the focused window's class and title, read live off Hyprland's
+  event socket. A terminal gets `copy / paste / clear`, a browser gets `back / forward
+  / reload / new tab / close tab`, anything else falls through to `[layouts.default]`.
+- **Groups, scenes and a module API.** A `[groups.*]` table folds a pile of buttons
+  behind one pill that expands in place (and can be slid into with a single drag). A
+  scene takes the whole bar for a few seconds — an incoming notification, a battery
+  readout. A module is a directory with a `manifest.json` and a `touchbar.py` that
+  registers widgets, scenes, timers, subprocesses and its own CLI verbs.
+- **It can be driven and screenshotted with no hardware at all.** `daemon --headless`
+  runs the whole engine against an in-memory surface, `screenshot` dumps that to a PNG,
+  and `touch x,y` injects a synthetic gesture. The animation at the top of this page was
+  made that way, on a laptop whose real Touch Bar was busy being used.
+
+### What you give up
+
+Worth being clear-eyed about before you mask tiny-dfr:
+
+- **It is Python, not Rust.** The runtime is `python-cairo` + `python-gobject`, and
+  every redraw and every touch goes through the interpreter. It is a daemon drawing a
+  2008×60 strip at up to 30 fps, not a hot loop — but it is not a small static binary
+  either.
+- **Per-app layouts need Hyprland.** The focused-window lookup speaks Hyprland's IPC
+  socket and nothing else. Without it the daemon still runs: it logs `no Hyprland (…);
+  static default layout` and comes up on `[layouts.default]`, with modules, groups,
+  scenes, sliders, touch, the CLI, and the Fn layer (read straight from evdev, not from
+  the compositor) all working. What you lose is exactly the `match` regexes, the
+  `core.app` widget, and the night-light button's *state* — the `display` module polls
+  `hyprctl hyprsunset temperature` to know whether to light up, though its tap action is
+  a plain shell command. Those two call sites are the only mentions of Hyprland in the
+  Python source (`install.sh` also edits your Hyprland config, which you can skip).
+- **It masks tiny-dfr.** Only one process can drive that CRTC, so `install.sh` runs
+  `systemctl disable --now tiny-dfr` then `systemctl mask tiny-dfr`. The daemon's own
+  message for a failed `drmModeSetCrtc` says as much: `SetCrtc failed (is tiny-dfr still
+  running?)`.
+- **The shipped layout is wired for Omarchy.** Most buttons in `config/layouts.toml`
+  shell out to `omarchy …`, `omarchy-als` or `omarchy-battery-limit`. They are only
+  `run = "…"` strings and the engine does not care what you point them at — but out of
+  the box on a non-Omarchy system, several of them will do nothing.
+- **It is very new, and it has exactly one test machine.** The first commit in this
+  repository is dated 2026-09-02. Everything has been calibrated against a single
+  MacBook Pro (13-inch, M2, 2022) running Asahi Linux — the buffer stride, the pill
+  geometry, the `MTP keyboard` name the Fn watcher looks for. tiny-dfr has years of
+  other people's hardware behind it; this has days and one laptop.
+- **It runs in your session, not as root.** `install.sh` adds you to `video` for the
+  DRM card and installs a udev rule for `/dev/uinput`, then runs the daemon as a systemd
+  *user* unit. That is a different trust model from a root system service — arguably
+  better, certainly different.
+
+### Trying it is reversible
+
+This is the part worth knowing before anything else:
+
+```
+./install.sh --uninstall
+```
+
+stops and disables the user service, removes it and the `macarchy-dfr` symlink, then
+`systemctl unmask tiny-dfr` and `systemctl enable --now tiny-dfr`. One command and you
+are back on tiny-dfr. Your `~/.config/macarchy-dfr/layouts.toml` is left alone, so
+re-running `./install.sh` picks up exactly where you left off.
+
+What `--uninstall` does *not* undo: the udev rule in `/etc/udev/rules.d/`,
+`/etc/modules-load.d/macarchy-dfr.conf`, your membership in the `video` group, and the
+Hyprland autostart line — all harmless to leave behind, all one `rm` away.
+
+### The thing you forked tiny-dfr for: one more button
+
+**A button that runs a command** is one table in `~/.config/macarchy-dfr/layouts.toml`
+plus its name in a layout. Save the file; the daemon notices within a second.
+
+```toml
+[items.notes]
+widget = "core.button"
+icon = "edit_note"                  # any Material Symbols name
+run  = "kitty -e nvim ~/notes.md"
+
+[layouts.default]
+left  = ["menu", "notes", "core.spacer"]
+right = ["group:system", "core.clock", "system.battery"]
+```
+
+`core.button` also takes `text`, `keys = ["LeftCtrl", "T"]` (evdev names without the
+`KEY_` prefix, sent through uinput), `icon_size`, `width`, `stretch`, `tint`, `badge`
+and `active`.
+
+**A button that runs your own code** needs a module: a directory with two files. Put it
+in `modules/`, or ship it as an Omarchy shell plugin under `~/.config/omarchy/plugins/`
+— where it additionally has to declare `"kinds": ["touchbar-module"]` and be enabled in
+`shell.json`.
+
+`modules/hello/manifest.json`
+
+```json
+{ "schemaVersion": 1, "id": "hello", "name": "Hello", "kinds": ["touchbar-module"],
+  "entryPoints": { "touchbarModule": "touchbar.py" }, "touchbarModule": { "apiVersion": 1, "order": 50 } }
+```
+
+`modules/hello/touchbar.py`
+
+```python
+from macarchy_dfr.widgets import Button
+
+
+class Module:
+    def setup(self, api):
+        api.widget("hi", lambda api, **p: Button(
+            api, icon="mood", text="hi", on_tap=lambda: api.log("tapped"), **p))
+```
+
+Then `macarchy-dfr reload`, and `"hello.hi"` becomes a reference any layout or group can
+name — directly in a `left`/`right` list, or through an `[items.*]` table that passes it
+parameters:
+
+```toml
+[layouts.default]
+left = ["hello.hi", "core.spacer"]
+```
+
+That is the entire contract for a button. Everything else grows off the same `api`
+object — timers, file watches, subprocesses, full-bar scenes, IPC verbs, the
+focused-window context — and [Writing a module](#writing-a-module) below lists all of
+it.
 
 ## Install
 
