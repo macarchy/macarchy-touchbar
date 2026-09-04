@@ -1,0 +1,61 @@
+name: package
+
+# Until now a release carried only the source zip GitHub attaches to any tag, so
+# "install macarchy-touchbar" meant "clone the repo and run install.sh". This
+# builds the PKGBUILD against the tag that was just released and attaches the
+# result, so a release is something you can actually install:
+#
+#   pacman -U macarchy-touchbar-<version>-any.pkg.tar.zst
+#
+# macarchy-install#16. install.sh is untouched and keeps working — the package is
+# an additional channel, not a replacement.
+
+on:
+  # ONLY on a published release. Never on push or pull_request: the PKGBUILD's
+  # source is the release tarball, which does not exist until the tag does.
+  release:
+    types: [published]
+  # Manual re-run for a release whose job failed. Idempotent: the upload clobbers.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build and attach (e.g. v0.4.1)"
+        required: true
+
+permissions:
+  contents: write        # to upload the asset onto the release
+
+concurrency:
+  group: package-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # arch=('any') — the package is architecture-independent by construction, so
+    # the x86_64 image is fine and the aarch64 runner would buy nothing. A repo
+    # that actually compiles needs the other treatment (see macarchy-install#18).
+    container: archlinux:base-devel
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the package
+        # makepkg refuses to run as root, and the container is root — so build as
+        # a throwaway user that owns the tree. --nodeps because `depends` is a
+        # RUNTIME contract for the target machine, not a build requirement here.
+        run: |
+          pacman -Sy --noconfirm --needed git python
+          useradd -m build
+          chown -R build:build .
+          su build -c 'makepkg -f --nodeps --noconfirm'
+          ls -l ./*.pkg.tar.*
+
+      - name: Attach it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        # A GLOB, not a name: PKGEXT differs between machines (.zst in this
+        # container, .xz on the maintainer's box), and hardcoding one silently
+        # uploads nothing. --clobber so a re-run replaces instead of failing.
+        run: gh release upload "$TAG" ./*.pkg.tar.* --clobber --repo "$GITHUB_REPOSITORY"
