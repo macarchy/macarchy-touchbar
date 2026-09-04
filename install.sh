@@ -57,10 +57,12 @@ if not os.path.isdir(hypr):
 changed = []
 
 # This project has shipped under three names (omarchy-dfr, then macarchy-dfr,
-# now macarchy-touchbar). The strings below are matched against lines an older
-# release wrote into the user's own config, so they keep their old spelling on
-# purpose -- renaming them here would turn the migration into a no-op.
-LEGACY = ("omarchy-dfr", "macarchy-dfr", "macarchy-touchbar")
+# now macarchy-touchbar). Only the two OLD spellings belong below: they are
+# matched against lines an older release wrote into the user's own config, so
+# they keep their old spelling on purpose -- renaming them here would turn the
+# migration into a no-op. The current name must NOT be listed: a block under it
+# is the one we (or the user) wrote by hand, and would be deleted.
+LEGACY = ("omarchy-dfr", "macarchy-dfr")
 
 bindings = os.path.join(hypr, "bindings.lua")
 MARKS = tuple(f"-- ── Touch Bar ({n})" for n in LEGACY)
@@ -81,7 +83,7 @@ if start is not None:
 
 autostart = os.path.join(hypr, "autostart.lua")
 OLDS = tuple(f'o.exec_on_start("{n} daemon")' for n in LEGACY) + tuple(
-    f'o.exec_on_start("systemctl --user start {n}.service")' for n in LEGACY[:-1])
+    f'o.exec_on_start("systemctl --user start {n}.service")' for n in LEGACY)
 NEW = 'o.exec_on_start("systemctl --user start macarchy-touchbar.service")'
 COMMENT = ("-- The Touch Bar (macarchy-touchbar): a systemd user service, so it restarts "
            "on failure and logs to the journal.")
