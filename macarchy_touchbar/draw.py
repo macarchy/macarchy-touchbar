@@ -21,8 +21,9 @@ try:
 except (ValueError, ImportError):
     Gdk = None
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CODEPOINTS = os.path.join(ROOT, "fonts", "MaterialSymbolsRounded.codepoints")
+from macarchy_touchbar.paths import data_root
+
+CODEPOINTS = os.path.join(data_root(), "fonts", "MaterialSymbolsRounded.codepoints")
 
 
 class Theme:

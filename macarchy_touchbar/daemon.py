@@ -20,7 +20,7 @@ from .touch import GestureRecognizer, TouchReader, find_touch_device
 from .uinput import VirtualKeyboard
 from .widgets import Sprite
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from macarchy_touchbar.paths import data_root  # noqa: E402
 HOME = os.path.expanduser("~")
 CFG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or f"{HOME}/.config", "macarchy-touchbar", "layouts.toml")
 PLUGINS = os.path.join(os.environ.get("XDG_CONFIG_HOME") or f"{HOME}/.config", "omarchy", "plugins")
@@ -40,7 +40,7 @@ def build(loop, output, config, plugins_dir=None, shell_json=None):
     host = ModuleHost(loop, None, registry)
     bar = Bar(output, loop, Painter(output.surface), config, registry, host)
     host.hooks = bar
-    specs = discover(os.path.join(ROOT, "modules"), plugins_dir or PLUGINS,
+    specs = discover(os.path.join(data_root(), "modules"), plugins_dir or PLUGINS,
                      _shell_json() if shell_json is None else shell_json)
     for spec in specs:
         host.load(spec)
@@ -68,7 +68,7 @@ def _load_config(path):
         return Config.load(path)
     except (OSError, ValueError) as e:
         log(f"{path}: {e}; using the shipped layouts")
-        return Config.load(os.path.join(ROOT, "config", "layouts.toml"))
+        return Config.load(os.path.join(data_root(), "config", "layouts.toml"))
 
 
 def run_daemon(headless=False, config_path=CFG):
@@ -155,7 +155,7 @@ def run_daemon(headless=False, config_path=CFG):
     def reload():
         nonlocal config
         config = _load_config(config_path)
-        rediscover(host, os.path.join(ROOT, "modules"), PLUGINS, _shell_json())
+        rediscover(host, os.path.join(data_root(), "modules"), PLUGINS, _shell_json())
         bar.reload_config(config)
         return "reloaded"
 
