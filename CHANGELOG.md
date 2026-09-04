@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/macarchy/macarchy-touchbar/compare/v0.4.0...v0.5.0) (2026-09-04)
+
+
+### Features
+
+* **pkg:** publish an installable package on every release ([3f5f5aa](https://github.com/macarchy/macarchy-touchbar/commit/3f5f5aafee4d986d2825fee860d96b05b07c561c))
+
+
+### Bug Fixes
+
+* **ci:** take pkgver from the tag instead of release-please's extra-files ([#13](https://github.com/macarchy/macarchy-touchbar/issues/13)) ([62dd9af](https://github.com/macarchy/macarchy-touchbar/commit/62dd9afb09a74f357b3cf879ed4b48cae4f6802f))
+
 ## [0.4.0](https://github.com/macarchy/macarchy-touchbar/compare/v0.3.0...v0.4.0) (2026-09-04)
 
 
