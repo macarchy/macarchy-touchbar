@@ -2,8 +2,8 @@
 import os
 import weakref
 
-from macarchy_dfr.layout import Layout, Row
-from macarchy_dfr.widgets import Button, Label
+from macarchy_touchbar.layout import Layout, Row
+from macarchy_touchbar.widgets import Button, Label
 
 
 def _read(path, default=""):
@@ -87,7 +87,7 @@ class Module:
 
     def charge_limit(self, api, **p):
         def tap():
-            api.run_detached("omarchy-battery-limit toggle")
+            api.run_detached("macarchy-battery-limit toggle")
             api.after(1.0, self.refresh)
         w = Button(api, icon="battery_saver", on_tap=tap, _kind="limit", **p)
         self.widgets.add(w)

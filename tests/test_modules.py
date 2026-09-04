@@ -1,8 +1,8 @@
 import json
 import os
 import time
-from macarchy_dfr.loop import EventLoop
-from macarchy_dfr.modules import discover, Registry, ModuleHost, Api
+from macarchy_touchbar.loop import EventLoop
+from macarchy_touchbar.modules import discover, Registry, ModuleHost, Api
 
 GOOD = '''
 class Module:
@@ -105,7 +105,7 @@ def test_api_state_dir_and_now(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
     host = ModuleHost(EventLoop(), Hooks(), Registry())
     api = Api(host, "x.y")
-    assert api.state_dir == str(tmp_path / "macarchy-dfr" / "x.y") and os.path.isdir(api.state_dir)
+    assert api.state_dir == str(tmp_path / "macarchy-touchbar" / "x.y") and os.path.isdir(api.state_dir)
     assert isinstance(api.now(), float)
 
 

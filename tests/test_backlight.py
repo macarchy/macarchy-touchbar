@@ -1,5 +1,5 @@
-from macarchy_dfr.backlight import BacklightPolicy, BarBacklight
-from macarchy_dfr.loop import EventLoop
+from macarchy_touchbar.backlight import BacklightPolicy, BarBacklight
+from macarchy_touchbar.loop import EventLoop
 
 
 def test_policy_follows_main_then_dims_then_turns_off():

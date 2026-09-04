@@ -6,8 +6,8 @@ import weakref
 
 from gi.repository import Gio, GLib
 
-from macarchy_dfr.log import log as _log
-from macarchy_dfr.widgets import Button, Slider
+from macarchy_touchbar.log import log as _log
+from macarchy_touchbar.widgets import Button, Slider
 
 _proxy = None
 
@@ -152,7 +152,7 @@ class Module:
         main = _read(f"{self.MAIN_DIR}/brightness") / max(1, _read(f"{self.MAIN_DIR}/max_brightness", 1))
         kbd = _read(f"{self.KBD_DIR}/brightness") / max(1, _read(f"{self.KBD_DIR}/max_brightness", 255))
         rt = self._runtime()
-        self.auto = os.path.exists(f"{rt}/omarchy-als.pid") and not os.path.exists(f"{rt}/omarchy-als.paused")
+        self.auto = os.path.exists(f"{rt}/macarchy-als.pid") and not os.path.exists(f"{rt}/macarchy-als.paused")
         for w in list(self.widgets):
             if w.params.get("_kind") == "brightness" and not w.pressed:
                 w.set_value(main)
@@ -200,7 +200,7 @@ class Module:
 
     def autobright(self, api, **p):
         def tap():
-            api.run_detached("omarchy-als toggle")
+            api.run_detached("macarchy-als toggle")
             api.after(0.5, self.refresh)
         w = Button(api, icon="brightness_auto", on_tap=tap, _kind="auto", **p)
         self.widgets.add(w)

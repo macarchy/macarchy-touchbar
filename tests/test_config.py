@@ -1,9 +1,9 @@
 import pytest
 
-from macarchy_dfr.config import Config, Resolver
-from macarchy_dfr.widgets import Button, BrokenWidget
-from macarchy_dfr.groups import GroupButton
-from macarchy_dfr.modules import Registry as ModuleRegistry
+from macarchy_touchbar.config import Config, Resolver
+from macarchy_touchbar.widgets import Button, BrokenWidget
+from macarchy_touchbar.groups import GroupButton
+from macarchy_touchbar.modules import Registry as ModuleRegistry
 
 TOML = '''
 [settings]

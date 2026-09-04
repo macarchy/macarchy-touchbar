@@ -81,7 +81,7 @@ class Api:
         self._procs = []
         self._shown, self._ctx_listeners = set(), []
         self.state_dir = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"),
-                                      "macarchy-dfr", module_id)
+                                      "macarchy-touchbar", module_id)
         os.makedirs(self.state_dir, exist_ok=True)
 
     # registration
@@ -240,7 +240,7 @@ class ModuleHost:
         api = Api(self, spec.id)
         self.apis[spec.id] = api
         try:
-            ms = importlib.util.spec_from_file_location(f"macarchy_dfr_module_{spec.id.replace('.', '_')}", spec.path)
+            ms = importlib.util.spec_from_file_location(f"macarchy_touchbar_module_{spec.id.replace('.', '_')}", spec.path)
             mod = importlib.util.module_from_spec(ms)
             ms.loader.exec_module(mod)
             inst = mod.Module()

@@ -1,7 +1,7 @@
 import os
 import sys
 import time
-from macarchy_dfr.loop import EventLoop
+from macarchy_touchbar.loop import EventLoop
 
 
 def test_fd_callback_fires_when_readable():

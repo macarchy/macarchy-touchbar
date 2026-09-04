@@ -9,7 +9,7 @@ from .touch import Gesture
 
 def sock_path():
     base = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
-    return os.path.join(base, "macarchy-dfr", "sock")
+    return os.path.join(base, "macarchy-touchbar", "sock")
 
 
 class IpcServer:
@@ -65,7 +65,7 @@ def ipc_send(line, path=None, timeout=2.0):
     try:
         s.connect(path or sock_path())
     except OSError as e:
-        raise ConnectionError(f"macarchy-dfr is not running ({e})") from e
+        raise ConnectionError(f"macarchy-touchbar is not running ({e})") from e
     s.sendall((line + "\n").encode())
     buf = b""
     while True:
@@ -140,12 +140,12 @@ class EngineIpc:
             return f"error: {e!r}"
 
 
-USAGE = ("usage: macarchy-dfr daemon [--headless] [--config <toml>] | status | reload | group <name>|close | "
+USAGE = ("usage: macarchy-touchbar daemon [--headless] [--config <toml>] | status | reload | group <name>|close | "
          "screenshot <png> | touch x,y [x2,y2] [--long] | brightness <n>|auto | <module> <verb> [args]")
 
 
 def client(argv):
-    """The CLI side of `macarchy-dfr <verb> …`. This module imports no engine
+    """The CLI side of `macarchy-touchbar <verb> …`. This module imports no engine
     code on purpose: a shell script calls it on every state change, and it has
     to cost a bare interpreter, not cairo and Pango."""
     if not argv:

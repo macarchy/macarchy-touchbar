@@ -42,7 +42,7 @@ def key_code(name):
 
 
 class VirtualKeyboard:
-    def __init__(self, path="/dev/uinput", name="macarchy-dfr keyboard"):
+    def __init__(self, path="/dev/uinput", name="macarchy-touchbar keyboard"):
         self.fd = None
         self.available = False
         try:

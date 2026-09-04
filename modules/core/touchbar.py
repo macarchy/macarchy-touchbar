@@ -1,8 +1,8 @@
 """core: the toolkit as widgets any layout can name, plus the clock and the focused app."""
 import time
 
-from macarchy_dfr.geometry import Rect
-from macarchy_dfr.widgets import Button, Image, Label, Meter, Slider, Spacer, Sprite
+from macarchy_touchbar.geometry import Rect
+from macarchy_touchbar.widgets import Button, Image, Label, Meter, Slider, Spacer, Sprite
 
 
 class Clock(Label):

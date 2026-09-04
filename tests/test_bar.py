@@ -1,13 +1,13 @@
 import cairo
-from macarchy_dfr.bar import Bar
-from macarchy_dfr.config import Config
-from macarchy_dfr.draw import Painter
-from macarchy_dfr.loop import EventLoop
-from macarchy_dfr.modules import Registry, ModuleHost
-from macarchy_dfr.output import HeadlessOutput
-from macarchy_dfr.touch import Gesture
-from macarchy_dfr.widgets import Button, Slider, Spacer, Label
-from macarchy_dfr.hypr import Context
+from macarchy_touchbar.bar import Bar
+from macarchy_touchbar.config import Config
+from macarchy_touchbar.draw import Painter
+from macarchy_touchbar.loop import EventLoop
+from macarchy_touchbar.modules import Registry, ModuleHost
+from macarchy_touchbar.output import HeadlessOutput
+from macarchy_touchbar.touch import Gesture
+from macarchy_touchbar.widgets import Button, Slider, Spacer, Label
+from macarchy_touchbar.hypr import Context
 
 TOML = '''
 [items.a]
@@ -95,7 +95,7 @@ def test_slide_into_transfers_the_drag_to_the_slider():
 def test_scene_takes_the_bar_and_a_stray_tap_dismisses_it():
     t = [0.0]
     bar, out, loop = make_bar(t)
-    from macarchy_dfr.layout import Layout, Row
+    from macarchy_touchbar.layout import Layout, Row
     bar.show_scene("m", "s", lambda api: Layout(Row([Label(None, text="hello", width=200)]), Row([])),
                    priority=50, timeout=None, dismissable=True)
     assert isinstance(bar.current_layout().left.widgets[0], Label)
@@ -158,7 +158,7 @@ def test_scene_on_hide_fires_once_when_the_scene_times_out():
     """The Api that showed a scene must learn about every way it goes away."""
     t = [0.0]
     bar, out, loop = make_bar(t)
-    from macarchy_dfr.layout import Layout, Row
+    from macarchy_touchbar.layout import Layout, Row
     hidden = []
     bar.show_scene("m", "s", lambda api: Layout(Row([Label(None, text="hi", width=200)]), Row([])),
                    priority=50, timeout=1, dismissable=True, on_hide=lambda: hidden.append("s"))

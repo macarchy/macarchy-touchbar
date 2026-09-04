@@ -1,5 +1,5 @@
-from macarchy_dfr.geometry import Rect
-from macarchy_dfr.layout import distribute, Row, Layout
+from macarchy_touchbar.geometry import Rect
+from macarchy_touchbar.layout import distribute, Row, Layout
 
 
 class W:

@@ -1,7 +1,7 @@
 import importlib.util
 
-from macarchy_dfr.loop import EventLoop
-from macarchy_dfr.modules import Registry, ModuleHost, ModuleSpec
+from macarchy_touchbar.loop import EventLoop
+from macarchy_touchbar.modules import Registry, ModuleHost, ModuleSpec
 from tests.test_modules import Hooks
 
 DBUS = '''method call time=1.0 sender=:1.5 -> destination=:1.2 serial=9 path=/org/freedesktop/Notifications; interface=org.freedesktop.Notifications; member=Notify

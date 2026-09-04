@@ -1,10 +1,10 @@
 import os
 import pytest
-from macarchy_dfr.ipc import IpcServer, ipc_send, EngineIpc
-from macarchy_dfr.loop import EventLoop
-from macarchy_dfr.touch import Gesture
-from macarchy_dfr.scenes import Scene
-from macarchy_dfr.layout import Layout, Row
+from macarchy_touchbar.ipc import IpcServer, ipc_send, EngineIpc
+from macarchy_touchbar.loop import EventLoop
+from macarchy_touchbar.touch import Gesture
+from macarchy_touchbar.scenes import Scene
+from macarchy_touchbar.layout import Layout, Row
 
 
 def test_round_trip_over_unix_socket(tmp_path):
@@ -25,7 +25,7 @@ class FakeBar:
     def open_group(self, n): self.open = n
     def close_group(self): self.open = None
     def screenshot(self, p): open(p, "w").write("png")
-    def current_layout(self): from macarchy_dfr.layout import Layout, Row; return Layout(Row([]), Row([]))
+    def current_layout(self): from macarchy_touchbar.layout import Layout, Row; return Layout(Row([]), Row([]))
     base_name = "default"; open_group_name = None
     class scenes: scenes = []
 
@@ -85,8 +85,8 @@ def test_cli_client_runs_with_the_gui_libraries_blocked(tmp_path):
     """The FSM calls the CLI on every transition: it must cost a bare interpreter, not cairo + Pango.
     `sys.modules[name] = None` makes `import name` raise, so any engine import would be a traceback."""
     code = ("import sys, runpy; sys.modules['cairo'] = None; sys.modules['gi'] = None; "
-            "sys.argv = ['macarchy-dfr', 'status']; runpy.run_path(%r, run_name='__main__')"
-            % os.path.join(ROOT, "bin", "macarchy-dfr"))
+            "sys.argv = ['macarchy-touchbar', 'status']; runpy.run_path(%r, run_name='__main__')"
+            % os.path.join(ROOT, "bin", "macarchy-touchbar"))
     env = dict(os.environ, XDG_RUNTIME_DIR=str(tmp_path))          # no daemon socket there
     r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env=env)
     assert "Traceback" not in r.stderr, r.stderr
@@ -94,7 +94,7 @@ def test_cli_client_runs_with_the_gui_libraries_blocked(tmp_path):
 
 
 def test_client_prints_usage_without_arguments():
-    from macarchy_dfr.ipc import client, USAGE
+    from macarchy_touchbar.ipc import client, USAGE
     assert client([]) == 2
     assert "daemon" in USAGE
 
@@ -103,7 +103,7 @@ def test_client_flattens_newlines_before_sending(monkeypatch):
     """A reply forwarded verbatim from a module (Jarvis's typed answer) can
     carry an embedded newline, which would otherwise break the one-line
     protocol or truncate the request."""
-    from macarchy_dfr import ipc
+    from macarchy_touchbar import ipc
 
     sent = []
     monkeypatch.setattr(ipc, "ipc_send", lambda line, **k: sent.append(line) or "ok")

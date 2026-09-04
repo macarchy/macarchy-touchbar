@@ -1,8 +1,8 @@
 import gc
 
-from macarchy_dfr.loop import EventLoop
-from macarchy_dfr.modules import Registry, ModuleHost, ModuleSpec
-from macarchy_dfr.draw import Theme
+from macarchy_touchbar.loop import EventLoop
+from macarchy_touchbar.modules import Registry, ModuleHost, ModuleSpec
+from macarchy_touchbar.draw import Theme
 from tests.test_modules import Hooks
 
 

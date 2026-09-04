@@ -1,15 +1,15 @@
 import os
 
-import macarchy_dfr.daemon as daemon
-from macarchy_dfr.daemon import build, main
-from macarchy_dfr.config import Config
-from macarchy_dfr.loop import EventLoop
-from macarchy_dfr.output import HeadlessOutput
-from macarchy_dfr.hypr import Context
+import macarchy_touchbar.daemon as daemon
+from macarchy_touchbar.daemon import build, main
+from macarchy_touchbar.config import Config
+from macarchy_touchbar.loop import EventLoop
+from macarchy_touchbar.output import HeadlessOutput
+from macarchy_touchbar.hypr import Context
 
 from tests.test_modules import GOOD, Hooks, plugin
-from macarchy_dfr.daemon import rediscover
-from macarchy_dfr.modules import ModuleHost, Registry
+from macarchy_touchbar.daemon import rediscover
+from macarchy_touchbar.modules import ModuleHost, Registry
 
 
 def test_build_wires_internal_modules_and_default_layout(tmp_path):

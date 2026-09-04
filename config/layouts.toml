@@ -1,4 +1,4 @@
-# macarchy-dfr — Touch Bar layouts. Saved changes apply immediately.
+# macarchy-touchbar — Touch Bar layouts. Saved changes apply immediately.
 # A reference is an [items.*] name, a "<module>.<widget>" with defaults, or "group:<name>".
 # Icon names: Material Symbols (https://fonts.google.com/icons), e.g. "brightness_high".
 # Key names: evdev without KEY_, any case ("LeftCtrl", "VolumeUp", "F1", "T").

@@ -5,7 +5,7 @@ name: release-please
 # CHANGELOG.md). Merging that PR tags vX.Y.Z and publishes the GitHub Release.
 #
 # There is no publish job on purpose: this repository is installed straight from its git
-# checkout (install.sh symlinks bin/macarchy-dfr into ~/.local/bin), so the tag IS the artifact.
+# checkout (install.sh symlinks bin/macarchy-touchbar into ~/.local/bin), so the tag IS the artifact.
 #
 # PRs land squash-merged, so the PR title becomes the commit message on main: it is the PR title,
 # not the branch commits, that decides the next version (fix: patch, feat: minor, feat!: major).

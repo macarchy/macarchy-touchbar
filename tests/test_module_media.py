@@ -1,9 +1,9 @@
 import importlib.util
 import json
 
-from macarchy_dfr.geometry import Rect
-from macarchy_dfr.loop import EventLoop
-from macarchy_dfr.modules import ModuleHost, ModuleSpec, Registry
+from macarchy_touchbar.geometry import Rect
+from macarchy_touchbar.loop import EventLoop
+from macarchy_touchbar.modules import ModuleHost, ModuleSpec, Registry
 from tests.test_modules import Hooks
 
 PATH = "modules/media/touchbar.py"

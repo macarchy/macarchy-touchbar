@@ -22,7 +22,7 @@ from .widgets import Sprite
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOME = os.path.expanduser("~")
-CFG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or f"{HOME}/.config", "macarchy-dfr", "layouts.toml")
+CFG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or f"{HOME}/.config", "macarchy-touchbar", "layouts.toml")
 PLUGINS = os.path.join(os.environ.get("XDG_CONFIG_HOME") or f"{HOME}/.config", "omarchy", "plugins")
 SHELL_JSON = os.path.join(os.environ.get("XDG_CONFIG_HOME") or f"{HOME}/.config", "omarchy", "shell.json")
 

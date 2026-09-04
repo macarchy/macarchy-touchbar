@@ -1,6 +1,6 @@
-from macarchy_dfr.scenes import Scene, SceneStack
-from macarchy_dfr.groups import Group, GroupButton
-from macarchy_dfr.layout import Layout, Row
+from macarchy_touchbar.scenes import Scene, SceneStack
+from macarchy_touchbar.groups import Group, GroupButton
+from macarchy_touchbar.layout import Layout, Row
 
 
 def lay():

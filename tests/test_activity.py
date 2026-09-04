@@ -1,7 +1,7 @@
 import os
 
-from macarchy_dfr.activity import ActivityWatcher, find_activity_devices
-from macarchy_dfr.loop import EventLoop
+from macarchy_touchbar.activity import ActivityWatcher, find_activity_devices
+from macarchy_touchbar.loop import EventLoop
 
 PROC = """\
 I: Bus=0019 Vendor=05ac Product=0354 Version=0240

@@ -7,8 +7,8 @@ import re
 
 from gi.repository import GLib
 
-from macarchy_dfr.layout import Layout, Row
-from macarchy_dfr.widgets import Button, Image, Label
+from macarchy_touchbar.layout import Layout, Row
+from macarchy_touchbar.widgets import Button, Image, Label
 
 NOTIFY_MATCH = "interface='org.freedesktop.Notifications',member='Notify'"
 _RE_STRING = re.compile(r'^\s+string "(.*)"$')

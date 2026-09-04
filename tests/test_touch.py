@@ -1,7 +1,7 @@
 import struct
 import time
 
-from macarchy_dfr.touch import TouchReader, TouchEvent, GestureRecognizer
+from macarchy_touchbar.touch import TouchReader, TouchEvent, GestureRecognizer
 
 EV_SYN, EV_KEY, EV_ABS = 0, 1, 3
 ABS_MT_SLOT, ABS_MT_POSITION_X, ABS_MT_POSITION_Y, ABS_MT_TRACKING_ID = 0x2f, 0x35, 0x36, 0x39

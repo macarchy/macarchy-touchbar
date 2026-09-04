@@ -1,8 +1,8 @@
 import os
 import cairo
 import pytest
-from macarchy_dfr.geometry import Rect
-from macarchy_dfr.output import HeadlessOutput, DrmOutput, card_candidates, _find_card
+from macarchy_touchbar.geometry import Rect
+from macarchy_touchbar.output import HeadlessOutput, DrmOutput, card_candidates, _find_card
 
 
 def test_headless_surface_is_landscape_and_png_round_trips(tmp_path):
@@ -34,7 +34,7 @@ def test_rotate_maps_landscape_pixel_to_portrait_row():
     assert px(60 - 1 - 5, 100) == b"\xff\xff\xff"
 
 
-@pytest.mark.skipif(os.environ.get("MACARCHY_DFR_HW_TESTS") != "1", reason="set MACARCHY_DFR_HW_TESTS=1 with the daemon stopped to test the real Touch Bar")
+@pytest.mark.skipif(os.environ.get("MACARCHY_TOUCHBAR_HW_TESTS") != "1", reason="set MACARCHY_TOUCHBAR_HW_TESTS=1 with the daemon stopped to test the real Touch Bar")
 def test_drm_output_opens_and_flushes():
     out = DrmOutput.open()
     assert (out.width, out.height) == (2008, 60)

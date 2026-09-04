@@ -3,9 +3,9 @@ import os
 import cairo
 import pytest
 
-import macarchy_dfr.draw as draw
-from macarchy_dfr.geometry import Rect
-from macarchy_dfr.draw import Painter, Theme, icon_codepoint, icon_font_available
+import macarchy_touchbar.draw as draw
+from macarchy_touchbar.geometry import Rect
+from macarchy_touchbar.draw import Painter, Theme, icon_codepoint, icon_font_available
 
 
 def surface():

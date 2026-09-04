@@ -1,9 +1,9 @@
 import cairo
 import pytest
 
-from macarchy_dfr.geometry import Rect
-from macarchy_dfr.draw import Painter, Theme, icon_font_available
-from macarchy_dfr.widgets import Widget, Button, Label, Spacer, Image, Slider, Meter, Sprite
+from macarchy_touchbar.geometry import Rect
+from macarchy_touchbar.draw import Painter, Theme, icon_font_available
+from macarchy_touchbar.widgets import Widget, Button, Label, Spacer, Image, Slider, Meter, Sprite
 
 
 class FakeApi:

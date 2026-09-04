@@ -25,7 +25,7 @@ import weakref
 
 from gi.repository import GLib
 
-from macarchy_dfr.widgets import Button, Image, Label, Slider
+from macarchy_touchbar.widgets import Button, Image, Label, Slider
 
 # Both matches on one invocation: the property churn of whatever is playing,
 # and players appearing/disappearing (a fresh mpv emits nothing until it does).
@@ -111,7 +111,7 @@ class Module:
     # --- widget factories ----------------------------------------------------
     def now_playing(self, api, **p):
         # Label, not Button: Button.measure() caches _text_w and never clears
-        # it when .text changes (macarchy_dfr/widgets.py), and this text
+        # it when .text changes (macarchy_touchbar/widgets.py), and this text
         # changes per track. Label.set_text invalidates on a real change only.
         p.setdefault("stretch", 1)
         p.setdefault("align", "left")
@@ -192,7 +192,7 @@ class Module:
 
     def on_ctx(self, ctx):
         # Context.awake goes False when the backlight turns the bar off after
-        # 300 s without a touch (macarchy_dfr/backlight.py), so a track playing
+        # 300 s without a touch (macarchy_touchbar/backlight.py), so a track playing
         # all evening on a dark bar costs nothing.
         if ctx.awake and not self._awake:
             self.refresh()
@@ -286,7 +286,7 @@ class Module:
             self._flush()
         self.api.run(["pactl", "set-sink-volume", self.sink, f"{round(v * 100)}%"], on_done=done)
 
-    # --- eyeless verification: `macarchy-dfr media status` -------------------
+    # --- eyeless verification: `macarchy-touchbar media status` -------------------
     def ipc_status(self, *_a):
         st = self.state
         if not st.get("hasPlayer"):

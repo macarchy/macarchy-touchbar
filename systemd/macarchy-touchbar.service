@@ -1,5 +1,5 @@
 [Unit]
-Description=macarchy-dfr - the Touch Bar, drawn by us
+Description=macarchy-touchbar - the Touch Bar, drawn by us
 After=graphical-session.target
 PartOf=graphical-session.target
 # Retry a genuine hiccup, but stop pounding on something that is not going to
@@ -15,7 +15,7 @@ OnFailure=macarchy-failed@%n.service
 
 [Service]
 Type=simple
-ExecStart=%h/.local/bin/macarchy-dfr daemon
+ExecStart=%h/.local/bin/macarchy-touchbar daemon
 Restart=on-failure
 RestartSec=2
 Environment=PYTHONUNBUFFERED=1

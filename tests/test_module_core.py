@@ -1,7 +1,7 @@
-from macarchy_dfr.loop import EventLoop
-from macarchy_dfr.modules import Registry, ModuleHost, ModuleSpec
-from macarchy_dfr.widgets import Button, Label, Slider
-from macarchy_dfr.hypr import Context
+from macarchy_touchbar.loop import EventLoop
+from macarchy_touchbar.modules import Registry, ModuleHost, ModuleSpec
+from macarchy_touchbar.widgets import Button, Label, Slider
+from macarchy_touchbar.hypr import Context
 from tests.test_modules import Hooks
 
 

@@ -1,3 +1,3 @@
-# macarchy-dfr runs in the user session: it needs the Touch Bar's touch device
+# macarchy-touchbar runs in the user session: it needs the Touch Bar's touch device
 # (group input, already) and uinput to type on the user's behalf.
 KERNEL=="uinput", SUBSYSTEM=="misc", MODE="0660", GROUP="input"

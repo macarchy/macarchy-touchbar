@@ -1,7 +1,7 @@
 import os
 import struct
-from macarchy_dfr.hypr import parse_events, Context, current_context
-from macarchy_dfr.fnkey import parse_fn, FnWatcher, _SZ
+from macarchy_touchbar.hypr import parse_events, Context, current_context
+from macarchy_touchbar.fnkey import parse_fn, FnWatcher, _SZ
 
 
 def test_parse_events_keeps_partial_tail():
@@ -10,7 +10,7 @@ def test_parse_events_keeps_partial_tail():
 
 
 def test_current_context_filters_transient_null_window(monkeypatch):
-    import macarchy_dfr.hypr as h
+    import macarchy_touchbar.hypr as h
     answers = {"activewindow": {}, "activeworkspace": {"id": 3, "windows": 2},
                "workspaces": [{"id": 3, "windows": 2}, {"id": 5, "windows": 0}, {"id": -99, "windows": 1}]}
     monkeypatch.setattr(h, "hypr_query", lambda cmd: answers[cmd])

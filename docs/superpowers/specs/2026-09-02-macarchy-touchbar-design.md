@@ -1,11 +1,11 @@
-# macarchy-dfr — une Touch Bar à nous, extensible par modules
+# macarchy-touchbar — une Touch Bar à nous, extensible par modules
 
 Date : 2026-09-02
 Statut : validé, en attente du plan d'implémentation
 
 ## Pourquoi
 
-`omarchy-dfr` rend la Touch Bar du MacBook Pro M2 contextuelle en réécrivant
+`macarchy-touchbar` rend la Touch Bar du MacBook Pro M2 contextuelle en réécrivant
 le `config.toml` de tiny-dfr à chaque changement de fenêtre. Ça marche, et ça
 plafonne : tiny-dfr ne sait dessiner que quatre choses (icône SVG, texte,
 heure, batterie), en un seul blanc, réagissant à un tap, et il tient seul le
@@ -34,7 +34,7 @@ Contrainte apprise : le dumb buffer doit faire **64** pixels de large (pitch
 
 ## Ce qu'on construit
 
-**macarchy-dfr** remplace tiny-dfr et omarchy-dfr. C'est un daemon Python en
+**macarchy-touchbar** remplace tiny-dfr et macarchy-touchbar. C'est un daemon Python en
 session utilisateur qui tient l'écran et le tactile, un toolkit de widgets au
 look macOS, et un **contrat de module** identique dans l'esprit à celui du
 Control Center : les fonctionnalités sont des modules découverts par le
@@ -56,11 +56,11 @@ Décisions prises pendant le brainstorming :
 
 ## Emplacement et process
 
-- Dépôt `~/Work/macarchy-dfr`, miroir `github.com/macarchy/macarchy-dfr`, avec
+- Dépôt `~/Work/macarchy-touchbar`, miroir `github.com/macarchy/macarchy-touchbar`, avec
   son `install.sh` (même modèle que jarvis).
-- Binaire `~/.local/bin/macarchy-dfr` (symlink vers `bin/macarchy-dfr` du
+- Binaire `~/.local/bin/macarchy-touchbar` (symlink vers `bin/macarchy-touchbar` du
   dépôt : pas de copie qui dérive).
-- Unité **systemd user** `macarchy-dfr.service` (`Restart=on-failure`,
+- Unité **systemd user** `macarchy-touchbar.service` (`Restart=on-failure`,
   journal), démarrée depuis `~/.config/hypr/autostart.lua`. La leçon du wake
   daemon de Jarvis : un daemon qui meurt sans journal n'est pas diagnostiquable.
 - Accès matériel sans root : l'utilisateur entre dans le groupe `video`
@@ -68,7 +68,7 @@ Décisions prises pendant le brainstorming :
   donc aucune ACL logind) ; une règle udev rend `/dev/uinput` accessible au
   groupe `input`. tiny-dfr est désactivé **et masqué**.
 - Rétroéclairage du bar (`/sys/class/backlight/228600000.dsi.0`) écrit via
-  logind `SetBrightness` sur D-Bus, le chemin d'omarchy-als.
+  logind `SetBrightness` sur D-Bus, le chemin d'macarchy-als.
 
 ## Le moteur
 
@@ -240,25 +240,25 @@ d'autre. Il ne voit pas le moteur : seulement `api`.
 | `api.every(seconds, fn)` / `api.after(seconds, fn)` | Minuteurs ; retournent un handle annulable |
 | `api.watch_file(path, fn)` / `api.watch_fd(fd, fn)` | inotify et fd dans la boucle |
 | `api.run(argv, on_done=None, on_line=None)` | Sous-processus asynchrone ; `on_line` pour les flux (cava, playerctl --follow) |
-| `api.ipc(verb, fn)` | `macarchy-dfr <id> <verb> [args…]` arrive dans `fn(*args)` ; réponse optionnelle renvoyée au client |
+| `api.ipc(verb, fn)` | `macarchy-touchbar <id> <verb> [args…]` arrive dans `fn(*args)` ; réponse optionnelle renvoyée au client |
 | `api.context` / `api.on_context(fn)` | Fenêtre au focus (classe, titre), workspaces, Fn enfoncé, barre allumée |
 | `api.keys([...])` | Frappe sur le clavier virtuel |
 | `api.icon(...)`, `api.text(...)`, `api.image(path)`, `api.app_icon(cls)`, `api.theme` | Primitives de dessin et palette |
 | `api.invalidate(widget=None)` | Demande de redessin (le widget, ou tout ce que le module a posé) |
 | `api.log(...)` | Journal, préfixé de l'id du module |
-| `api.state_dir` | `~/.local/state/macarchy-dfr/<id>/` pour ce que le module doit persister |
+| `api.state_dir` | `~/.local/state/macarchy-touchbar/<id>/` pour ce que le module doit persister |
 
 ### IPC
 
-Socket Unix `$XDG_RUNTIME_DIR/macarchy-dfr/sock`, une requête = une ligne
+Socket Unix `$XDG_RUNTIME_DIR/macarchy-touchbar/sock`, une requête = une ligne
 (`<module> <verb> [args…]` ou un verbe du moteur), une réponse = une ligne.
 Verbes du moteur : `status`, `reload`, `group <nom>|close`, `screenshot
 <png>`, `touch x,y [x2,y2]`, `brightness <n>|auto`. Le client est le même
-exécutable (`macarchy-dfr <…>`).
+exécutable (`macarchy-touchbar <…>`).
 
 ## Composition : layouts.toml v2
 
-Fichier `~/.config/macarchy-dfr/layouts.toml`, surveillé, appliqué à la
+Fichier `~/.config/macarchy-touchbar/layouts.toml`, surveillé, appliqué à la
 sauvegarde. Trois tables et des réglages.
 
 ```toml
@@ -312,8 +312,8 @@ moteur qui l'offre ou chacun le lit.
 |---|---|---|
 | `core` | button, slider, label, spacer, clock, image, scrubber ; couche Fn | — |
 | `media` | now_playing (pochette, titre défilant, ligne de temps glissable), play/prev/next, volume (slider), mute, mic, spectrum (Meter à bandes) | `playerctl --follow` (metadata, position, `mpris:artUrl`), `wpctl`, `pw-mon` pour le HUD volume, `cava` en sortie brute |
-| `display` | brightness (slider), keyboard (slider), nightlight, auto (ALS) ; scène HUD | sysfs backlight (inotify) → scène HUD priorité 20, 1,5 s ; `omarchy-brightness-*`, `omarchy-als toggle`, `omarchy toggle nightlight` |
-| `system` | battery (icône + %, vert/rouge, temps restant en `long-press`), lock, charge_limit, screenshot ; scène vignette | `macsmc-battery` sysfs, `omarchy-battery-limit`, `omarchy capture screenshot` puis surveillance du dossier de captures → vignette + Copier / Ouvrir / Supprimer (10 s) |
+| `display` | brightness (slider), keyboard (slider), nightlight, auto (ALS) ; scène HUD | sysfs backlight (inotify) → scène HUD priorité 20, 1,5 s ; `omarchy-brightness-*`, `macarchy-als toggle`, `omarchy toggle nightlight` |
+| `system` | battery (icône + %, vert/rouge, temps restant en `long-press`), lock, charge_limit, screenshot ; scène vignette | `macsmc-battery` sysfs, `macarchy-battery-limit`, `omarchy capture screenshot` puis surveillance du dossier de captures → vignette + Copier / Ouvrir / Supprimer (10 s) |
 | `workspaces` | scrubber des workspaces occupés avec l'icône Papirus de leur première fenêtre, le courant marqué | Hyprland IPC (events + `workspaces`, `clients`) |
 | `notifications` | scène : icône Papirus de l'app, résumé, corps ellipsé, ✕ | `dbus-monitor` sur `org.freedesktop.Notifications` (le mécanisme actuel), priorité 30, 5 s |
 | `omarchy` | menu, clipboard (scrubber cliphist), emoji (scrubber), theme | `omarchy menu`, `cliphist list`, table d'emoji embarquée |
@@ -328,7 +328,7 @@ Module **externe** : `macarchy.jarvis` (`~/Work/jarvis/plugin/touchbar.py`).
   à 40 px, avec ses émotions (le service QML et lui lisent le même état).
   `tap` = `omarchy-jarvis press` ; `long-press` = `omarchy-shell
   macarchy.control-center jarvis`.
-- **IPC** : `macarchy-dfr macarchy.jarvis state <idle|listening|thinking|
+- **IPC** : `macarchy-touchbar macarchy.jarvis state <idle|listening|thinking|
   speaking|followup|sleeping>`, `heard <texte>`, `reply <phrase>`, `level
   <0..1>`, `emote <nom>`. Le FSM de `bin/jarvis` les appelle là où il appelle
   aujourd'hui `set_state` et l'USR1 ; le wake daemon publie `level` à 10 Hz
@@ -350,13 +350,13 @@ Module **externe** : `macarchy.jarvis` (`~/Work/jarvis/plugin/touchbar.py`).
 ## Module agent (Claude Code)
 
 - `install.sh` ajoute à `~/.claude/settings.json` deux hooks vers
-  `macarchy-dfr-agent` (livré dans `bin/`) :
-  - `PermissionRequest` → `macarchy-dfr-agent ask` : envoie au daemon
+  `macarchy-touchbar-agent` (livré dans `bin/`) :
+  - `PermissionRequest` → `macarchy-touchbar-agent ask` : envoie au daemon
     l'outil, un résumé d'une ligne (commande, fichier) et l'id de session, puis
     **attend la décision** sur la socket (60 s). Sortie : la décision au format
     attendu par le hook (`allow` / `deny`), ou rien pour rendre la main au
     terminal, qui demande comme d'habitude.
-  - `Notification` (attend une entrée) et `Stop` → `macarchy-dfr-agent
+  - `Notification` (attend une entrée) et `Stop` → `macarchy-touchbar-agent
     notify <événement>` : badge sur le bouton agent, clignotement « terminé ».
 - La scène (priorité 70, non `dismissable`) montre l'icône de l'agent, `Bash ·
   git push origin main` ellipsé, et **Autoriser / Toujours / Refuser**.
@@ -379,22 +379,22 @@ Module **externe** : `macarchy.jarvis` (`~/Work/jarvis/plugin/touchbar.py`).
 3. Groupe `video` pour l'utilisateur ; règle udev `/dev/uinput` → `input`
    (via `pkexec`, une seule invite).
 4. `systemctl disable --now tiny-dfr && systemctl mask tiny-dfr`.
-5. Symlink `~/.local/bin/macarchy-dfr`, unité user, `systemctl --user
-   enable --now macarchy-dfr`.
-6. `~/.config/macarchy-dfr/layouts.toml` s'il n'existe pas.
+5. Symlink `~/.local/bin/macarchy-touchbar`, unité user, `systemctl --user
+   enable --now macarchy-touchbar`.
+6. `~/.config/macarchy-touchbar/layouts.toml` s'il n'existe pas.
 7. Hooks Claude Code dans `~/.claude/settings.json` (fusion, jamais
    d'écrasement).
 8. Retrait des binds F13–F24 de `~/.config/hypr/bindings.lua` et de
-   l'autostart `omarchy-dfr` ; ajout du `systemctl --user start`.
+   l'autostart `macarchy-touchbar` ; ajout du `systemctl --user start`.
 
 Ailleurs :
 
-- `~/Work/jarvis` : `bin/jarvis` appelle l'IPC macarchy-dfr à la place de
+- `~/Work/jarvis` : `bin/jarvis` appelle l'IPC macarchy-touchbar à la place de
   l'USR1 ; le manifeste gagne le kind ; `plugin/touchbar.py` ; le wake daemon
-  publie `level` ; `HEARTBEAT_PROMPT.md` sonde `macarchy-dfr status` au lieu
+  publie `level` ; `HEARTBEAT_PROMPT.md` sonde `macarchy-touchbar status` au lieu
   de `pgrep`.
-- `~/Work/omarchy-mac` : `hardware/omarchy-dfr` et `examples/omarchy-dfr.layouts.toml`
-  retirés, README pointe vers macarchy-dfr.
+- `~/Work/macarchy-core` : `hardware/macarchy-touchbar` et `examples/macarchy-touchbar.layouts.toml`
+  retirés, README pointe vers macarchy-touchbar.
 - `install.sh --uninstall` : arrête et retire l'unité, démasque et relance
   tiny-dfr, retire les hooks. Les fichiers de config restent.
 
@@ -403,10 +403,10 @@ Ailleurs :
 Je ne vois pas la barre : tout ce qui est visuel doit être lisible en PNG, et
 tout ce qui est logique doit tourner sans matériel.
 
-- `macarchy-dfr screenshot <png>` : la scène paysage courante en PNG, lue
+- `macarchy-touchbar screenshot <png>` : la scène paysage courante en PNG, lue
   après chaque changement visuel (la boucle capture → lire → corriger des
   sprites de Jarvis).
-- `macarchy-dfr touch x,y [x2,y2] [--long]` : injecte un tap, un drag ou un
+- `macarchy-touchbar touch x,y [x2,y2] [--long]` : injecte un tap, un drag ou un
   appui long dans le reconnaisseur, exactement comme event3.
 - `--headless` : moteur et modules sans DRM ni evdev, sur une surface cairo en
   mémoire ; c'est le mode des tests.
@@ -415,7 +415,7 @@ tout ce qui est logique doit tourner sans matériel.
   jamais de chevauchement), composition TOML (références, repli, erreurs),
   pile de scènes (priorités, timeouts, dismiss), chargement d'un module en
   panne (⚠ sans casser la barre), hook agent sans daemon (rend la main).
-- Sur la machine, après chaque lot : `systemctl --user status macarchy-dfr`,
+- Sur la machine, après chaque lot : `systemctl --user status macarchy-touchbar`,
   un screenshot par layout et par scène, un drag sur le slider de luminosité
   vérifié dans sysfs.
 
@@ -431,8 +431,8 @@ tout ce qui est logique doit tourner sans matériel.
 3. **Média** : Now Playing, HUD volume/luminosité, spectre.
 4. **Scrubber** : le widget, puis workspaces, emoji, presse-papier.
 5. **Agent** : hooks, scène permission, badge.
-6. **Finitions** : vignette de capture, `idle`, retrait d'omarchy-dfr dans
-   omarchy-mac, notes de mémoire.
+6. **Finitions** : vignette de capture, `idle`, retrait d'macarchy-touchbar dans
+   macarchy-core, notes de mémoire.
 
 ## Hors périmètre
 

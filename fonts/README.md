@@ -1,6 +1,6 @@
 # fonts/
 
-Icon font used by `macarchy_dfr/draw.py`, downloaded at setup time (not committed —
+Icon font used by `macarchy_touchbar/draw.py`, downloaded at setup time (not committed —
 15 MB, `fonts/*.ttf` and `fonts/*.codepoints` are git-ignored).
 
 ## Material Symbols Rounded
@@ -19,4 +19,4 @@ fc-list | grep -c "Material Symbols Rounded"
 
 `install.sh` (task 20) will repeat these steps for a fresh install. The `.codepoints`
 file maps icon names (e.g. `brightness_high`) to hex codepoints, read by
-`icon_codepoint()` in `macarchy_dfr/draw.py`.
+`icon_codepoint()` in `macarchy_touchbar/draw.py`.

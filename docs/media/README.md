@@ -16,18 +16,18 @@ rt=$(mktemp -d /tmp/dfr.XXXX)          # must be short: AF_UNIX paths cap at ~10
 cfg=$(mktemp -d) frames=$(mktemp -d)
 export XDG_RUNTIME_DIR=$rt XDG_CONFIG_HOME=$cfg XDG_STATE_HOME=$cfg
 
-./bin/macarchy-dfr daemon --headless --config config/layouts.toml &
-until [ -S "$rt/macarchy-dfr/sock" ]; do sleep 0.2; done
+./bin/macarchy-touchbar daemon --headless --config config/layouts.toml &
+until [ -S "$rt/macarchy-touchbar/sock" ]; do sleep 0.2; done
 
-./bin/macarchy-dfr screenshot "$frames/1.png"
-./bin/macarchy-dfr touch 1420,30                      # the media group's pill
-./bin/macarchy-dfr screenshot "$frames/2.png"
-./bin/macarchy-dfr touch 1557,30                      # display
-./bin/macarchy-dfr screenshot "$frames/3.png"
-./bin/macarchy-dfr touch 1693,30                      # system
-./bin/macarchy-dfr screenshot "$frames/4.png"
-./bin/macarchy-dfr touch 70,30                        # the group's close button
-./bin/macarchy-dfr screenshot "$frames/5.png"
+./bin/macarchy-touchbar screenshot "$frames/1.png"
+./bin/macarchy-touchbar touch 1420,30                      # the media group's pill
+./bin/macarchy-touchbar screenshot "$frames/2.png"
+./bin/macarchy-touchbar touch 1557,30                      # display
+./bin/macarchy-touchbar screenshot "$frames/3.png"
+./bin/macarchy-touchbar touch 1693,30                      # system
+./bin/macarchy-touchbar screenshot "$frames/4.png"
+./bin/macarchy-touchbar touch 70,30                        # the group's close button
+./bin/macarchy-touchbar screenshot "$frames/5.png"
 kill %1
 ```
 
