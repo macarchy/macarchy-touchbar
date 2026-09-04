@@ -75,6 +75,8 @@ jobs:
           ref: ${{ needs.release-please.outputs.tag_name || inputs.package_tag }}
 
       - name: Build the package
+        env:
+          TAG: ${{ needs.release-please.outputs.tag_name || inputs.package_tag }}
         # -Syu, not -Sy: a partial upgrade can link the fresh python against a
         # glibc this image does not have, and it reads as a build bug.
         # github-cli because `gh` lives on the RUNNER, not inside the container.
@@ -82,6 +84,11 @@ jobs:
         # --nodeps because `depends` is a runtime contract for the target machine.
         run: |
           pacman -Syu --noconfirm --needed git python github-cli
+          # The tag is the truth. Rewriting pkgver here means the package can
+          # never carry a version the release does not, and release-please needs
+          # no extra-files entry to keep them in step.
+          sed -i "s/^pkgver=.*/pkgver=${TAG#v}/" PKGBUILD
+          grep -q "^pkgver=${TAG#v}$" PKGBUILD
           useradd -m build && chown -R build:build .
           su build -c 'makepkg -f --nodeps --noconfirm'
           ls -l ./*.pkg.tar.*
