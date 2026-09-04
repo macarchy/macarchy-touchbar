@@ -83,6 +83,17 @@ if i is not None:
         f.write("".join(lines))
     changed.append(f"{autostart}: autostart the macarchy-dfr user service")
 
+else:
+    # Nothing to migrate: a machine that never ran omarchy-dfr. The unit is
+    # enabled and starts with graphical-session.target anyway, but the
+    # explicit line is what the rest of the setup (and its doctor) expects.
+    text = "".join(lines)
+    if NEW not in text:
+        with open(autostart, "a") as f:
+            f.write(("\n" if text and not text.endswith("\n") else "")
+                    + COMMENT + "\n" + NEW + "\n")
+        changed.append(f"{autostart}: autostart the macarchy-dfr user service")
+
 print("\n".join(changed) if changed else "Hyprland config: nothing to migrate.")
 HYPRMIG
 command -v hyprctl >/dev/null 2>&1 && hyprctl reload >/dev/null 2>&1 || true
@@ -91,7 +102,7 @@ command -v hyprctl >/dev/null 2>&1 && hyprctl reload >/dev/null 2>&1 || true
 mkdir -p "$HOME/.local/bin" "$HOME/.config/macarchy-dfr" "$HOME/.config/systemd/user"
 ln -sf "$PWD/bin/macarchy-dfr" "$HOME/.local/bin/macarchy-dfr"
 [[ -e "$HOME/.config/macarchy-dfr/layouts.toml" ]] || cp config/layouts.toml "$HOME/.config/macarchy-dfr/"
-cp systemd/macarchy-dfr.service "$HOME/.config/systemd/user/"
+cp systemd/macarchy-dfr.service systemd/macarchy-dfr-failed.service "$HOME/.config/systemd/user/"
 systemctl --user daemon-reload
 systemctl --user enable macarchy-dfr.service
 

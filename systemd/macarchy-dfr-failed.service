@@ -1,0 +1,11 @@
+[Unit]
+Description=Say that the Touch Bar daemon gave up
+# Triggered by macarchy-dfr.service's OnFailure=, i.e. only once it has run out
+# of restarts. A dead Touch Bar looks exactly like a Touch Bar with nothing on
+# it, so without this the failure is invisible until someone reaches for a key.
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'command -v notify-send >/dev/null || exit 0; \
+  notify-send -u critical -a "Touch Bar" "Touch Bar stopped" \
+  "$(journalctl --user -u macarchy-dfr -n 1 -o cat 2>/dev/null | tail -c 200)"'

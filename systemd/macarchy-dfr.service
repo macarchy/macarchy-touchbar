@@ -2,6 +2,13 @@
 Description=macarchy-dfr - the Touch Bar, drawn by us
 After=graphical-session.target
 PartOf=graphical-session.target
+# Retry a genuine hiccup, but stop pounding on something that is not going to
+# work: on 2026-09-04 a moved DRM card node had it restart 69 times in four
+# minutes, in silence. Ten tries over two minutes, then fail for real -- and
+# say so.
+StartLimitIntervalSec=120
+StartLimitBurst=10
+OnFailure=macarchy-dfr-failed.service
 
 [Service]
 Type=simple
