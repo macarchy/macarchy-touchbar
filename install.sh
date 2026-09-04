@@ -45,9 +45,18 @@ python3 - <<'HYPRMIG'
 import os
 
 home = os.path.expanduser("~")
+hypr = os.path.join(home, ".config", "hypr")
+
+# Not everyone lands here from Omarchy: tiny-dfr users on another compositor
+# have no ~/.config/hypr at all. Nothing to migrate, and nothing to create —
+# say so and leave the rest of the install to carry on.
+if not os.path.isdir(hypr):
+    print("Hyprland config: no ~/.config/hypr, skipping the Hyprland migration.")
+    raise SystemExit(0)
+
 changed = []
 
-bindings = os.path.join(home, ".config", "hypr", "bindings.lua")
+bindings = os.path.join(hypr, "bindings.lua")
 MARK = "-- ── Touch Bar (omarchy-dfr)"
 try:
     lines = open(bindings).read().splitlines(keepends=True)
@@ -64,7 +73,7 @@ if start is not None:
             f.write("".join(lines))
         changed.append(f"{bindings}: removed the omarchy-dfr Touch Bar bindings")
 
-autostart = os.path.join(home, ".config", "hypr", "autostart.lua")
+autostart = os.path.join(hypr, "autostart.lua")
 OLD = 'o.exec_on_start("omarchy-dfr daemon")'
 NEW = 'o.exec_on_start("systemctl --user start macarchy-dfr.service")'
 COMMENT = ("-- The Touch Bar (macarchy-dfr): a systemd user service, so it restarts "
