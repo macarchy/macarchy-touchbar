@@ -120,7 +120,7 @@ The daemon can be driven and inspected entirely from the terminal, which matters
 
 ## Hardware tests
 
-Most of the test suite runs against fakes and needs nothing special. Two tests touch the real Touch Bar hardware (`/dev/dri/card3`, `/dev/uinput`) and are skipped by default:
+Most of the test suite runs against fakes and needs nothing special. Two tests touch the real Touch Bar hardware (the Touch Bar’s DRM card, `/dev/uinput`) and are skipped by default:
 
 ```
 MACARCHY_DFR_HW_TESTS=1 python3 -m pytest tests/ -q

@@ -29,10 +29,13 @@ mkdir -p fonts "$HOME/.local/share/fonts"
 cp fonts/MaterialSymbolsRounded.ttf "$HOME/.local/share/fonts/"
 fc-cache -f >/dev/null
 
-# 3. hardware access without root: video group for card3, uinput for the keyboard; tiny-dfr out of the way
+# 3. hardware access without root: video group for the Touch Bar's DRM card,
+#    uinput for the keyboard; tiny-dfr out of the way
 pkexec bash -c "
 	usermod -aG video $USER
 	install -m 644 '$PWD/udev/70-macarchy-dfr.rules' /etc/udev/rules.d/
+	install -m 644 '$PWD/modules-load.d/macarchy-dfr.conf' /etc/modules-load.d/
+	modprobe uinput
 	udevadm control --reload && udevadm trigger --subsystem-match=misc
 	systemctl disable --now tiny-dfr 2>/dev/null; systemctl mask tiny-dfr
 "
