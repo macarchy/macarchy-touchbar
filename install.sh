@@ -102,7 +102,11 @@ command -v hyprctl >/dev/null 2>&1 && hyprctl reload >/dev/null 2>&1 || true
 mkdir -p "$HOME/.local/bin" "$HOME/.config/macarchy-dfr" "$HOME/.config/systemd/user"
 ln -sf "$PWD/bin/macarchy-dfr" "$HOME/.local/bin/macarchy-dfr"
 [[ -e "$HOME/.config/macarchy-dfr/layouts.toml" ]] || cp config/layouts.toml "$HOME/.config/macarchy-dfr/"
-cp systemd/macarchy-dfr.service systemd/macarchy-dfr-failed.service "$HOME/.config/systemd/user/"
+# The bespoke notifier is gone (macarchy-failed@.service from macarchy-install
+# replaces it); drop the stale installed copy so a re-run converges instead of
+# leaving an orphan that nothing triggers.
+rm -f "$HOME/.config/systemd/user/macarchy-dfr-failed.service"
+cp systemd/macarchy-dfr.service "$HOME/.config/systemd/user/"
 systemctl --user daemon-reload
 systemctl --user enable macarchy-dfr.service
 
