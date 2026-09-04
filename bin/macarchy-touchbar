@@ -3,8 +3,28 @@
 import os
 import sys
 
-ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-sys.path.insert(0, ROOT)
+# Find the tree that holds macarchy_touchbar/ next to modules/ and config/, and
+# put it on sys.path. Code and data are co-located ON PURPOSE: everything below
+# then resolves relative to the package, exactly as it did when the only layout
+# was a git checkout.
+#
+# The alternative -- python package in site-packages, data in /usr/share -- was
+# tried and rejected: it bakes the CI container's interpreter version into an
+# arch=('any') package, so a target whose python differs by one minor version
+# gets ImportError while depends=('python') claims to be satisfied.
+_HERE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+_CANDIDATES = (os.environ.get("MACARCHY_TOUCHBAR_DATA"), _HERE, "/usr/share/macarchy-touchbar")
+for _root in _CANDIDATES:
+    if _root and os.path.isdir(os.path.join(_root, "macarchy_touchbar")):
+        sys.path.insert(0, _root)
+        break
+else:
+    # Say which places were tried. Falling through to the import would raise a
+    # bare ImportError naming a module, which tells the reader nothing about the
+    # real problem: the tree is somewhere this binary did not look.
+    sys.exit("macarchy-touchbar: cannot find macarchy_touchbar/ — looked in "
+             + ", ".join(repr(c) for c in _CANDIDATES if c)
+             + "\nSet MACARCHY_TOUCHBAR_DATA to the tree that holds it.")
 
 if len(sys.argv) > 1 and sys.argv[1] == "daemon":
     from macarchy_touchbar.daemon import main  # noqa: E402

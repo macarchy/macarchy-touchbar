@@ -21,8 +21,14 @@ try:
 except (ValueError, ImportError):
     Gdk = None
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CODEPOINTS = os.path.join(ROOT, "fonts", "MaterialSymbolsRounded.codepoints")
+from macarchy_touchbar.paths import data_root
+
+def codepoints_path():
+    # A call, not a module constant: data_root() reads the environment, and a
+    # constant frozen at import would move modules/ and config/ without moving
+    # the icon font -- the OSError below is swallowed and every icon silently
+    # resolves to None. (_codepoints, below, is the parsed cache; different thing.)
+    return os.path.join(data_root(), "fonts", "MaterialSymbolsRounded.codepoints")
 
 
 class Theme:
@@ -53,7 +59,7 @@ def icon_codepoint(name):
     if _codepoints is None:
         _codepoints = {}
         try:
-            with open(CODEPOINTS) as f:
+            with open(codepoints_path()) as f:
                 for line in f:
                     n, _, hexcode = line.strip().partition(" ")
                     if hexcode:

@@ -1,0 +1,32 @@
+post_install() {
+  cat <<'NOTE'
+
+  macarchy-touchbar is installed, but pacman cannot do the half of install.sh
+  that is not file copying. Until these are done the bar will not come up:
+
+    sudo usermod -aG video "$USER"     # open the Touch Bar's DRM card (needs a relogin)
+    sudo modprobe uinput               # the rule is shipped; the module must be loaded once
+    sudo systemctl disable --now tiny-dfr && sudo systemctl mask tiny-dfr
+                                       # tiny-dfr drives the same panel; two owners means neither works
+
+    systemctl --user enable --now macarchy-touchbar.service
+
+  A dead bar looks exactly like a bar with nothing on it, so if it stays blank:
+    journalctl --user -u macarchy-touchbar -b
+
+NOTE
+}
+
+post_upgrade() {
+  systemctl --user try-restart macarchy-touchbar.service 2>/dev/null || true
+}
+
+pre_remove() {
+  systemctl --user disable --now macarchy-touchbar.service 2>/dev/null || true
+  cat <<'NOTE'
+
+  The Touch Bar is unowned now. To hand it back to tiny-dfr:
+    sudo systemctl unmask tiny-dfr && sudo systemctl enable --now tiny-dfr
+
+NOTE
+}

@@ -19,7 +19,7 @@ def pixel(s, x, y):
     return (r, g, b)
 
 
-@pytest.mark.skipif(not os.path.exists(draw.CODEPOINTS),
+@pytest.mark.skipif(not os.path.exists(draw.codepoints_path()),
                     reason="fonts/MaterialSymbolsRounded.codepoints not downloaded (install.sh)")
 def test_codepoint_lookup():
     assert icon_codepoint("brightness_high") == ""
@@ -61,7 +61,7 @@ def test_missing_icon_falls_back_to_warning_and_never_raises():
 
 def test_icon_never_raises_when_codepoints_file_is_missing(monkeypatch):
     # Fresh checkout: fonts/*.codepoints is git-ignored and may not exist.
-    monkeypatch.setattr(draw, "CODEPOINTS", "/nonexistent/MaterialSymbolsRounded.codepoints")
+    monkeypatch.setattr(draw, "codepoints_path", lambda: "/nonexistent/MaterialSymbolsRounded.codepoints")
     monkeypatch.setattr(draw, "_codepoints", None)
     s = surface()
     Painter(s).icon(cairo.Context(s), "brightness_high", 50, 30)
