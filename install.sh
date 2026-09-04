@@ -128,7 +128,6 @@ ln -sf "$PWD/bin/macarchy-touchbar" "$HOME/.local/bin/macarchy-touchbar"
 systemctl --user disable --now macarchy-dfr.service 2>/dev/null || true
 rm -f "$HOME/.config/systemd/user/macarchy-dfr.service" \
       "$HOME/.config/systemd/user/macarchy-dfr-failed.service" \
-      "$HOME/.config/systemd/user/macarchy-touchbar-failed.service" \
       "$HOME/.local/bin/macarchy-dfr"
 cp systemd/macarchy-touchbar.service "$HOME/.config/systemd/user/"
 systemctl --user daemon-reload
