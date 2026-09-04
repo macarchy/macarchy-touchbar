@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/macarchy/macarchy-touchbar/compare/v0.4.0...v0.4.1) (2026-09-04)
+
+
+### Bug Fixes
+
+* **ci:** take pkgver from the tag instead of release-please's extra-files ([#13](https://github.com/macarchy/macarchy-touchbar/issues/13)) ([62dd9af](https://github.com/macarchy/macarchy-touchbar/commit/62dd9afb09a74f357b3cf879ed4b48cae4f6802f))
+
 ## [0.4.0](https://github.com/macarchy/macarchy-touchbar/compare/v0.3.0...v0.4.0) (2026-09-04)
 
 
