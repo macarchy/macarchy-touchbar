@@ -184,6 +184,28 @@ left  = ["menu", "core.spacer"]
 right = ["group:system", "core.clock"]
 ```
 
+## claude.context — the agent you are not watching
+
+`claude.context` is a readout of how full the Claude Code context window is.
+macarchy-core's status line drops each session's percentage in
+`$XDG_RUNTIME_DIR/macarchy-claude/<session id>` as it renders; the module reads
+them back every five seconds, shows the *fullest* one and sweeps the files of
+sessions that have exited. Green under 60 %, orange, then red at 85 %, where a
+compaction is close. Running several sessions at once, the pill carries a badge
+with how many are alive — the number that matters when three agents are working
+in branches you cannot see.
+
+```toml
+[items.claude]
+widget = "claude.context"
+
+[layouts.default]
+right = ["claude", "core.clock"]
+```
+
+With no status line running the pill stays a plain icon, so it costs nothing to
+leave in the layout.
+
 ## Writing a module
 
 A module lives in its own directory with a `manifest.json`:
