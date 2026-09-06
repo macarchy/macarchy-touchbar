@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/macarchy/macarchy-touchbar/compare/v0.5.0...v0.6.0) (2026-09-05)
+
+
+### Features
+
+* **claude:** a context-window readout for sessions you are not watching ([#16](https://github.com/macarchy/macarchy-touchbar/issues/16)) ([ec1726a](https://github.com/macarchy/macarchy-touchbar/commit/ec1726a0a954f02321f34be7ebb7cc60c971d0fc))
+
 ## [0.5.0](https://github.com/macarchy/macarchy-touchbar/compare/v0.4.0...v0.5.0) (2026-09-04)
 
 
